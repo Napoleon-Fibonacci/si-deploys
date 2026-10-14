@@ -1,0 +1,830 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface2: var(--surface2);
+  --color-surface3: var(--surface3);
+  --color-line: var(--line);
+  --color-line2: var(--line2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-faint: var(--faint);
+  --color-accent: var(--accent);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-err: var(--err);
+
+  --font-sans: var(--font-instrument), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+:root {
+  --bg: #0a0b0e;
+  --surface: #101216;
+  --surface2: #16191e;
+  --surface3: #1c2026;
+  --line: #23272e;
+  --line2: #2f343c;
+  --ink: #e8eaee;
+  --muted: #949aa3;
+  --faint: #6a707a;
+  --accent: #7c8cff;
+  --on-accent: #0a0b0e;
+  --ok: #4ade80;
+  --warn: #fbbf24;
+  --err: #fb7185;
+
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+::selection {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* ---------- Latar: kisi titik statis, tanpa cahaya ---------- */
+
+.bg-grid {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background-image: radial-gradient(circle, var(--line2) 1px, transparent 1px);
+  background-size: 26px 26px;
+  opacity: 0.5;
+  -webkit-mask-image: radial-gradient(ellipse 100% 80% at 50% 0%, #000 10%, transparent 82%);
+  mask-image: radial-gradient(ellipse 100% 80% at 50% 0%, #000 10%, transparent 82%);
+}
+
+/* ---------- Ikon hiasan tepi layar ---------- */
+
+.side-icons {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+.side-ico {
+  position: absolute;
+  color: var(--faint);
+  opacity: 0.5;
+  animation: float-a 10s ease-in-out infinite;
+  will-change: transform;
+}
+.side-ico.is-alt {
+  animation-name: float-b;
+}
+@media (max-width: 1079px) {
+  .side-icons {
+    display: none;
+  }
+}
+
+@keyframes float-a {
+  0%,
+  100% {
+    transform: translateY(0) rotate(-5deg);
+  }
+  50% {
+    transform: translateY(-16px) rotate(5deg);
+  }
+}
+@keyframes float-b {
+  0%,
+  100% {
+    transform: translateY(0) rotate(6deg) scale(1);
+  }
+  50% {
+    transform: translateY(13px) rotate(-6deg) scale(1.08);
+  }
+}
+
+/* ---------- Kerangka aplikasi (terbuka, tanpa kotak) ---------- */
+
+.app {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
+.appbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--bg) 80%, transparent);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.appbar-inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  max-width: 620px;
+  margin: 0 auto;
+  height: 56px;
+  padding: 0 24px;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+.wordmark > svg {
+  color: var(--accent);
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  align-items: safe center;
+  justify-content: center;
+  padding: 40px 24px 72px;
+}
+
+.app-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  align-items: safe center;
+  justify-content: center;
+  padding: 56px 24px 96px;
+}
+
+.stack {
+  width: 100%;
+  max-width: 620px;
+}
+
+.stack-title {
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+.lead {
+  max-width: 52ch;
+  margin-top: 8px;
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+.pane-main {
+  margin-top: 28px;
+}
+
+.actionbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 24px;
+}
+
+.pane-side {
+  margin-top: 56px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+}
+
+/* ---------- Field ---------- */
+
+.field + .field {
+  margin-top: 30px;
+}
+
+.field-label {
+  display: block;
+  margin-bottom: 10px;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--faint);
+}
+.status-dot.is-ready {
+  background: var(--ok);
+}
+
+/* ---------- Kontrol ---------- */
+
+.input {
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface2);
+  color: var(--ink);
+  font-size: 15px;
+  outline: none;
+  transition: border-color 160ms var(--ease-out), background-color 160ms var(--ease-out);
+}
+.input::placeholder {
+  color: var(--faint);
+}
+.input:hover {
+  border-color: var(--line2);
+}
+.input:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
+.btn-primary {
+  height: 44px;
+  border-radius: 10px;
+  padding: 0 24px;
+  min-width: 132px;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--bg);
+  background: var(--ink);
+  transition: transform 140ms var(--ease-out), background-color 140ms var(--ease-out),
+    opacity 140ms var(--ease-out);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.btn-primary:hover:not(:disabled) {
+  background: #ffffff;
+}
+.btn-primary:active:not(:disabled) {
+  transform: scale(0.98);
+}
+.btn-primary:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+}
+.btn-primary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  font-size: 14px;
+  transition: border-color 160ms var(--ease-out), background-color 160ms var(--ease-out),
+    transform 140ms var(--ease-out);
+}
+.btn-ghost:hover {
+  border-color: var(--line2);
+  background: var(--surface2);
+}
+.btn-ghost:active {
+  transform: scale(0.98);
+}
+.btn-ghost:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* ---------- Ikon di dalam kontrol ---------- */
+
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  color: var(--muted);
+  transition: color 160ms var(--ease-out), border-color 160ms var(--ease-out),
+    background-color 160ms var(--ease-out);
+}
+.icon-btn:hover {
+  color: var(--ink);
+  border-color: var(--line);
+  background: var(--surface3);
+}
+.icon-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.input-icon {
+  position: relative;
+}
+.input-icon > svg {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--faint);
+  pointer-events: none;
+}
+.input-icon .input {
+  padding-left: 40px;
+}
+
+/* ---------- Dropzone (sekaligus alternatif tombol) ---------- */
+
+.dz {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 26px 16px 22px;
+  border: 1px dashed var(--line2);
+  border-radius: 12px;
+  background: var(--surface2);
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 160ms var(--ease-out), background-color 160ms var(--ease-out);
+}
+.dz:hover {
+  border-color: var(--line2);
+  background: var(--surface3);
+}
+.dz:focus-within {
+  border-color: var(--accent);
+}
+.dz.is-over {
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 10%, var(--surface2));
+}
+.dz-icon {
+  color: var(--muted);
+  transition: color 160ms var(--ease-out), transform 220ms var(--ease-spring);
+}
+.dz.is-over .dz-icon {
+  color: var(--accent);
+  transform: translateY(-2px);
+}
+
+/* ---------- Chip file terpilih ---------- */
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface2);
+}
+.chip-badge {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--surface3);
+  color: var(--muted);
+  flex-shrink: 0;
+}
+
+/* ---------- Segmented tabs ---------- */
+
+.seg {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  padding: 4px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface2);
+}
+.seg-thumb {
+  position: absolute;
+  top: 4px;
+  bottom: 4px;
+  left: 4px;
+  width: calc((100% - 8px) / 2);
+  border-radius: 8px;
+  background: var(--surface3);
+  border: 1px solid var(--line2);
+  transition: transform 280ms var(--ease-out);
+}
+.seg-tab {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 38px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--muted);
+  transition: color 160ms var(--ease-out);
+}
+.seg-tab[aria-selected="true"] {
+  color: var(--ink);
+}
+.seg-tab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+/* ---------- Rail tahap deploy ---------- */
+
+.rail {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  width: 100%;
+  max-width: 360px;
+}
+.rail::before {
+  content: "";
+  position: absolute;
+  top: 5px;
+  left: 16.6%;
+  right: 16.6%;
+  height: 1px;
+  background: var(--line);
+}
+.rail-step {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+  text-align: center;
+}
+.rail-dot {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--surface2);
+  border: 1px solid var(--line2);
+  transition: background-color 320ms var(--ease-out), border-color 320ms var(--ease-out);
+}
+.rail-step[data-state="done"] .rail-dot,
+.rail-step[data-state="active"] .rail-dot {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.rail-step[data-state="active"] .rail-dot {
+  animation: dot-pulse 1.5s ease-in-out infinite;
+}
+.rail-label {
+  font-size: 11.5px;
+  line-height: 1.25;
+  color: var(--faint);
+  transition: color 320ms var(--ease-out);
+}
+.rail-step[data-state="done"] .rail-label {
+  color: var(--muted);
+}
+.rail-step[data-state="active"] .rail-label {
+  color: var(--ink);
+}
+
+@keyframes dot-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ---------- Gerak masuk ---------- */
+
+.reveal {
+  opacity: 0;
+  transform: translateY(10px);
+  animation: reveal 520ms var(--ease-out) forwards;
+  animation-delay: var(--d, 0ms);
+}
+
+@keyframes reveal {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.row-in {
+  opacity: 0;
+  transform: translateY(5px);
+  animation: reveal 360ms var(--ease-out) forwards;
+  animation-delay: var(--d, 0ms);
+}
+
+/* ---------- Cek nama ---------- */
+
+.check-icon {
+  animation: fade-in 180ms var(--ease-out);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.check-path path {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: draw 320ms var(--ease-out) forwards;
+}
+
+@keyframes draw {
+  to { stroke-dashoffset: 0; }
+}
+
+.shake {
+  animation: shake 260ms var(--ease-out) 1;
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  30% { transform: translateX(-3px); }
+  60% { transform: translateX(3px); }
+}
+
+/* ---------- Sukses ---------- */
+
+.pop {
+  animation: pop 460ms var(--ease-spring) both;
+}
+
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.check-draw path {
+  stroke-dasharray: 24;
+  stroke-dashoffset: 24;
+  animation: draw 420ms var(--ease-out) 120ms forwards;
+}
+
+.spinner {
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid color-mix(in srgb, var(--bg) 35%, transparent);
+  border-top-color: var(--bg);
+  animation: spin 640ms linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* ---------- Ledger (pane samping) ---------- */
+
+.ledger-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 65%, transparent);
+}
+.ledger-row:last-child {
+  border-bottom: 0;
+}
+
+/* ---------- Menu admin ---------- */
+
+.appbar-wide {
+  max-width: 960px;
+}
+
+.admin-main {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  padding: 40px 24px 80px;
+}
+
+.admin {
+  width: 100%;
+  max-width: 960px;
+}
+
+.admin-login {
+  width: 100%;
+  max-width: 380px;
+  margin-top: 12vh;
+}
+
+.admin-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+.admin-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+.admin-total {
+  flex-shrink: 0;
+  padding-top: 0;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  color: var(--faint);
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--muted);
+  transition:
+    color 160ms var(--ease-out),
+    background-color 160ms var(--ease-out);
+}
+.filter:hover {
+  color: var(--ink);
+  background: var(--surface2);
+}
+.filter[aria-current="true"] {
+  color: var(--ink);
+  background: var(--surface3);
+  border-color: var(--line2);
+}
+.filter-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--faint);
+}
+
+.admin-search {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.admin-search .input-icon {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-table-wrap {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+.admin-table th {
+  padding: 10px 14px;
+  text-align: left;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--faint);
+  white-space: nowrap;
+  border-bottom: 1px solid var(--line);
+}
+.admin-table td {
+  padding: 10px 14px;
+  white-space: nowrap;
+  border-bottom: 1px solid color-mix(in srgb, var(--line) 65%, transparent);
+}
+.admin-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+.admin-table tbody tr:hover {
+  background: color-mix(in srgb, var(--surface2) 70%, transparent);
+}
+
+.admin-link {
+  color: var(--ink);
+  text-decoration: underline;
+  text-decoration-color: var(--line2);
+  text-underline-offset: 3px;
+  transition: text-decoration-color 160ms var(--ease-out);
+}
+.admin-link:hover {
+  text-decoration-color: var(--accent);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border: 1px solid var(--line2);
+  border-radius: 999px;
+  font-size: 11px;
+  color: var(--muted);
+}
+.badge::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+.badge[data-s="active"] {
+  color: var(--ok);
+}
+.badge[data-s="failed"] {
+  color: var(--err);
+}
+.badge[data-s="deleting"] {
+  color: var(--warn);
+}
+.badge[data-s="pending"] {
+  color: var(--accent);
+}
+.badge[data-s="deleted"] {
+  color: var(--faint);
+}
+
+.admin-empty {
+  padding: 28px 0;
+  font-size: 13px;
+  color: var(--faint);
+}
+.admin-note {
+  margin-top: 12px;
+  font-size: 12px;
+  color: var(--faint);
+}
+
+/* ---------- prefers-reduced-motion ---------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .reveal,
+  .row-in,
+  .pop {
+    animation-duration: 1ms;
+    animation-delay: 0ms;
+    transform: none;
+  }
+  .rail-step[data-state="active"] .rail-dot {
+    animation: none;
+  }
+  .seg-thumb,
+  .check-path,
+  .check-draw path,
+  .btn-primary,
+  .btn-ghost,
+  .input {
+    transition-duration: 1ms;
+    animation-duration: 1ms;
+  }
+  .spinner {
+    animation-duration: 1.4s;
+  }
+  .shake {
+    animation: none;
+  }
+  .side-ico {
+    animation: none;
+  }
+}

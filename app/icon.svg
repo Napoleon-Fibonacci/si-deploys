@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Si Deploy">
+  <rect width="64" height="64" rx="15" fill="#101216" />
+  <rect x="1.5" y="1.5" width="61" height="61" rx="13.5" fill="none" stroke="#23272e" stroke-width="3" />
+  <g transform="translate(8 8) scale(2)" fill="none" stroke="#7c8cff" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="12" cy="12" r="9" />
+    <path d="M12 16V8" />
+    <path d="m8 12 4-4 4 4" />
+  </g>
+</svg>

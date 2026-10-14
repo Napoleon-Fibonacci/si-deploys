@@ -1,0 +1,10 @@
+# Berkas yang tak perlu ikut keunggah saat deploy lewat CLI.
+# Cermin dari .gitignore, terutama untuk menjaga rahasia .env.local.
+node_modules
+.next
+out
+.vercel
+.env
+.env.local
+.env*.local
+*.tsbuildinfo
