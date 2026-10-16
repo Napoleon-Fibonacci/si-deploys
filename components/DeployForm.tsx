@@ -5,6 +5,7 @@ import {
   IconAlert,
   IconArchive,
   IconCheck,
+  IconCode,
   IconCopy,
   IconExternal,
   IconFolder,
@@ -29,6 +30,8 @@ import {
   NAME_RULE_TEXT,
   ZIP_ACCEPT,
   ZIP_ONLY_MESSAGE,
+  HTML_ACCEPT,
+  isHtmlName,
   isZipName,
   isValidName,
 } from "@/lib/validate";
@@ -125,6 +128,7 @@ export default function DeployForm() {
   const [copied, setCopied] = useState(false);
 
   const folderInputRef = useRef<HTMLInputElement>(null);
+  const htmlInputRef = useRef<HTMLInputElement>(null);
   const zipInputRef = useRef<HTMLInputElement>(null);
 
   // webkitdirectory bukan atribut JSX dikenal: pasang lewat ref.
@@ -424,7 +428,7 @@ export default function DeployForm() {
                           <IconUpload size={26} />
                         </span>
                         <span className="mt-1 text-sm">
-                          Tarik file ZIP atau folder ke sini
+                          Tarik file ZIP, folder, atau satu file HTML ke sini
                         </span>
                         <span className="text-[12px] text-faint">atau</span>
                         <span className="mt-2 flex flex-wrap justify-center gap-2">
@@ -450,6 +454,17 @@ export default function DeployForm() {
                             <IconFolder size={15} />
                             Pilih folder
                           </button>
+                          <button
+                            type="button"
+                            className="btn-ghost"
+                            onClick={(event) => {
+                              event.stopPropagation();
+                              htmlInputRef.current?.click();
+                            }}
+                          >
+                            <IconCode size={15} />
+                            Pilih file HTML
+                          </button>
                         </span>
                       </div>
                     ) : (
@@ -459,7 +474,11 @@ export default function DeployForm() {
                         </span>
                         <span className="min-w-0 flex-1">
                           <span className="block truncate font-mono text-[13px]">
-                            {pick.kind === "zip" ? pick.file.name : `${pick.entries.length} file`}
+                            {pick.kind === "zip"
+                              ? pick.file.name
+                              : pick.entries.length === 1
+                                ? pick.entries[0].path
+                                : `${pick.entries.length} file`}
                           </span>
                           <span className="block text-[12px] text-faint">{formatBytes(pickBytes(pick))}</span>
                         </span>
@@ -495,9 +514,28 @@ export default function DeployForm() {
                       className="hidden"
                       onChange={(event) => onFolderChange(event.target.files)}
                     />
+                    <input
+                      ref={htmlInputRef}
+                      type="file"
+                      accept={HTML_ACCEPT}
+                      className="hidden"
+                      onChange={(event) => {
+                        const file = event.target.files?.[0] ?? null;
+                        if (!file) return;
+                        if (!isHtmlName(file.name)) {
+                          showError("Sumber HTML harus berformat .html atau .htm.");
+                          event.target.value = "";
+                          return;
+                        }
+                        // Dibungkus jadi pick folder satu berkas: jalur ZIP yang
+                        // sudah ada yang menangani, dan server menyalin berkas itu
+                        // jadi index.html.
+                        setPick({ kind: "folder", entries: [{ path: file.name, file }] });
+                      }}
+                    />
                     <p className="mt-2 text-[13px] text-faint">
                       Maksimal {MAX_ZIP_BYTES / 1024 / 1024} MB dan {MAX_FILES} file. Wajib ada
-                      index.html di root.
+                      index.html di root; satu file HTML tunggal otomatis jadi index.html.
                     </p>
                   </div>
                 )}

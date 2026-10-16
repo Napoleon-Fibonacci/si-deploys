@@ -28,6 +28,14 @@ export function isZipName(name: string): boolean {
 /** Satu rumah untuk pesan berkas yang bukan ZIP; dipakai UI dan klien deploy. */
 export const ZIP_ONLY_MESSAGE = "Sumber ZIP harus berformat .zip.";
 
+/** Nama berkas kandidat halaman HTML. */
+export function isHtmlName(name: string): boolean {
+  return /\.html?$/i.test(name);
+}
+
+/** Atribut accept untuk elemen input HTML tunggal. */
+export const HTML_ACCEPT = ".html,.htm,text/html";
+
 /** Versi tanpa lempar dari validateName, untuk gerbang klien. */
 export function isValidName(value: unknown): boolean {
   return (
@@ -137,7 +145,7 @@ function ensureIndexHtml(files: DeployFile[]): void {
 
   const rootHtml = files.filter((file) => {
     const path = file.path.replace(/\\/g, "/");
-    return !path.includes("/") && /\.html?$/i.test(path);
+    return !path.includes("/") && isHtmlName(path);
   });
   if (rootHtml.length === 1) {
     files.push({ path: "index.html", data: rootHtml[0].data });
