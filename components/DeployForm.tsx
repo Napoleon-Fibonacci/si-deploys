@@ -28,6 +28,8 @@ import {
   MAX_ZIP_BYTES,
   NAME_RULE_TEXT,
   ZIP_ACCEPT,
+  ZIP_ONLY_MESSAGE,
+  isZipName,
   isValidName,
 } from "@/lib/validate";
 import { NAME_TAKEN_MESSAGE, type ErrorField } from "@/lib/errors";
@@ -256,7 +258,7 @@ export default function DeployForm() {
     const all = entries.length > 0 ? entries : fallback;
     if (all.length === 0) return;
     setTab("zip");
-    if (all.length === 1 && all[0].path.toLowerCase().endsWith(".zip")) {
+    if (all.length === 1 && isZipName(all[0].path)) {
       setPick({ kind: "zip", file: all[0].file });
       return;
     }
@@ -477,7 +479,12 @@ export default function DeployForm() {
                       accept={ZIP_ACCEPT}
                       className="hidden"
                       onChange={(event) => {
-                        const file = event.target.files?.[0];
+                        const file = event.target.files?.[0] ?? null;
+                        if (file && !isZipName(file.name)) {
+                          showError(ZIP_ONLY_MESSAGE);
+                          event.target.value = "";
+                          return;
+                        }
                         setPick(file ? { kind: "zip", file } : null);
                       }}
                     />

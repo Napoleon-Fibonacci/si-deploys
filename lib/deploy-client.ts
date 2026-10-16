@@ -7,7 +7,7 @@ import {
   type SourceType,
 } from "./deploy-protocol";
 import { errorField, errorMessage, type ErrorField } from "./errors";
-import { MAX_FILES, MAX_ZIP_BYTES, ValidationError } from "./validate";
+import { MAX_FILES, MAX_ZIP_BYTES, ValidationError, ZIP_ONLY_MESSAGE, isZipName } from "./validate";
 
 /**
  * Sisi klien dari alur deploy, tanpa React. Komponen hanya berlangganan
@@ -79,6 +79,9 @@ export async function toZipFile(pick: Picked | null): Promise<File> {
     throw new ValidationError("Pilih file ZIP atau folder dulu.");
   }
   if (pick.kind === "zip") {
+    if (!isZipName(pick.file.name)) {
+      throw new ValidationError(ZIP_ONLY_MESSAGE);
+    }
     if (pick.file.size > MAX_ZIP_BYTES) {
       throw new ValidationError(`ZIP lebih dari ${MAX_ZIP_BYTES / 1024 / 1024} MB.`);
     }
@@ -109,6 +112,9 @@ export async function prepareSource(input: DeployInput): Promise<DeploySource> {
   const { upload } = await import("@vercel/blob/client");
   const uploaded = await upload(file.name, file, {
     access: "public",
+    // Tipe ditulis eksplisit: sebagian browser memberi File.type kosong untuk
+    // ZIP, dan Blob menolak unggahan yang tipe isinya bukan ZIP.
+    contentType: "application/zip",
     handleUploadUrl: UPLOAD_HANDLER_ENDPOINT,
   });
   return { type: "zip", blobUrl: uploaded.url };

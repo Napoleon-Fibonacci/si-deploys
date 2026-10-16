@@ -66,6 +66,11 @@ describe("toZipFile", () => {
     await expect(toZipFile({ kind: "zip", file: zip })).rejects.toThrow(/10 MB/);
   });
 
+  it("menolak berkas yang bukan .zip", async () => {
+    const html = new File(["<h1>hai</h1>"], "halaman.html", { type: "text/html" });
+    await expect(toZipFile({ kind: "zip", file: html })).rejects.toThrow(/\.zip/);
+  });
+
   it("menolak folder dengan terlalu banyak file", async () => {
     const entries = [entry("index.html")];
     for (let index = 0; index < MAX_FILES; index += 1) entries.push(entry(`f${index}.css`));

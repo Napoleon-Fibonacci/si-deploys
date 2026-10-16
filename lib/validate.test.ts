@@ -88,6 +88,23 @@ describe("validateFiles", () => {
     expect(() => validateFiles([file("style.css")], "ZIP")).toThrow(ValidationError);
   });
 
+  it("salin satu-satunya HTML di root menjadi index.html", () => {
+    const cleaned = validateFiles([file("halaman.html", "<h1>hai</h1>")], "ZIP");
+    expect(cleaned.map((f) => f.path).sort()).toEqual(["halaman.html", "index.html"]);
+    const index = cleaned.find((f) => f.path === "index.html");
+    expect(new TextDecoder().decode(index?.data)).toBe("<h1>hai</h1>");
+  });
+
+  it("tak menyalin bila ada lebih dari satu HTML di root", () => {
+    expect(() => validateFiles([file("a.html"), file("b.html")], "ZIP")).toThrow(
+      ValidationError
+    );
+  });
+
+  it("tidak menyalin HTML yang bukan di root", () => {
+    expect(() => validateFiles([file("sub/only.html")], "ZIP")).toThrow(ValidationError);
+  });
+
   it("mengizinkan situs yang hanya berisi folder api/", () => {
     expect(validateFiles([file("api/hello.js")], "ZIP")).toHaveLength(1);
   });
