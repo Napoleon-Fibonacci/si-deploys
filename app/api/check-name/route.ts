@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 /**
  * GET /api/check-name?name=...
- * Cek tabel deployments dulu, lalu heuristik DNS nama.vercel.app.
+ * Cek tabel deployments dulu, lalu heuristik HTTP nama.vercel.app.
  * Heuristik, bukan jaminan. Pengecekan final tetap di /api/deploy.
  */
 export async function GET(request: NextRequest) {
@@ -27,10 +27,10 @@ export async function GET(request: NextRequest) {
       });
     }
   } catch {
-    // Database belum siap: lanjut ke cek DNS saja.
+    // Database belum siap: lanjut ke cek HTTP saja.
   }
 
-  if (await resolvesVercelSubdomain(name)) {
+  if (await isVercelNameTaken(name)) {
     return Response.json({
       available: false,
       reason: "Subdomain ini sudah dipakai di Vercel. Coba nama lain.",
@@ -39,12 +39,24 @@ export async function GET(request: NextRequest) {
   return Response.json({ available: true });
 }
 
-async function resolvesVercelSubdomain(name: string): Promise<boolean> {
+/**
+ * Heuristik HTTP, bukan DNS: Vercel memasang wildcard `*.vercel.app`, jadi
+ * setiap nama selalu "resolve" dan cek DNS akan menandai semua nama terpakai.
+ *
+ * Nama yang belum dipakai menjawab 404 dengan `x-vercel-error:
+ * DEPLOYMENT_NOT_FOUND`. Nama terpakai menjawab hal lain: 200, atau 404
+ * dengan `NOT_FOUND` bila project-nya ada tanpa deployment.
+ */
+async function isVercelNameTaken(name: string): Promise<boolean> {
   try {
-    const dns = await import("node:dns/promises");
-    await dns.resolve(`${name}.vercel.app`);
-    return true;
+    const response = await fetch(`https://${name}.vercel.app/`, {
+      method: "HEAD",
+      redirect: "manual",
+      signal: AbortSignal.timeout(8_000),
+    });
+    return response.headers.get("x-vercel-error") !== "DEPLOYMENT_NOT_FOUND";
   } catch {
+    // Tak bisa dihubungi: jangan blokir. Pengecekan final tetap di /api/deploy.
     return false;
   }
 }
