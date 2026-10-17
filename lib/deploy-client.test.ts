@@ -2,6 +2,7 @@ import { unzipSync } from "fflate";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   checkName,
+  pastedPick,
   prepareSource,
   startDeploy,
   toZipFile,
@@ -69,6 +70,20 @@ describe("toZipFile", () => {
   it("menolak berkas yang bukan .zip", async () => {
     const html = new File(["<h1>hai</h1>"], "halaman.html", { type: "text/html" });
     await expect(toZipFile({ kind: "zip", file: html })).rejects.toThrow(/\.zip/);
+  });
+
+  it("membungkus kode yang ditempel jadi satu index.html", () => {
+    expect(pastedPick("<h1>hai</h1>")).toEqual({
+      kind: "folder",
+      entries: [{ path: "index.html", file: expect.any(File) }],
+    });
+  });
+
+  it("kode tempel jadi ZIP berisi index.html", async () => {
+    const zip = await toZipFile(pastedPick("<h1>hai</h1>"));
+    const entries = unzipSync(new Uint8Array(await zip.arrayBuffer()));
+    expect(Object.keys(entries)).toEqual(["index.html"]);
+    expect(new TextDecoder().decode(entries["index.html"])).toBe("<h1>hai</h1>");
   });
 
   it("menolak folder dengan terlalu banyak file", async () => {

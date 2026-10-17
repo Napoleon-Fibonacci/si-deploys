@@ -259,6 +259,33 @@ body {
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
 }
 
+/* Tempel kode: textarea monospace, satu keluarga dengan .input. */
+.code-input {
+  width: 100%;
+  min-height: 190px;
+  padding: 12px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface2);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.55;
+  resize: vertical;
+  outline: none;
+  transition: border-color 160ms var(--ease-out), background-color 160ms var(--ease-out);
+}
+.code-input::placeholder {
+  color: var(--faint);
+}
+.code-input:hover {
+  border-color: var(--line2);
+}
+.code-input:focus-visible {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 22%, transparent);
+}
+
 .btn-primary {
   height: 44px;
   border-radius: 10px;

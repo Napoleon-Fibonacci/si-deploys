@@ -102,8 +102,21 @@ export async function toZipFile(pick: Picked | null): Promise<File> {
   return new File([zipSync(entries)], "folder.zip", { type: "application/zip" });
 }
 
-/** Siapkan `source` untuk /api/deploy: URL GitHub apa adanya, atau ZIP ke Blob. */
-export async function prepareSource(input: DeployInput): Promise<DeploySource> {
+/**
+ * Kode yang ditempel jadi satu berkas index.html. Sama seperti pilihan satu
+ * file HTML: masuk lewat jalur ZIP yang sudah ada, jadi server tak perlu tahu
+ * bahwa sumbernya ditempel.
+ */
+export function pastedPick(code: string): Picked {
+  return {
+    kind: "folder",
+    entries: [
+      { path: "index.html", file: new File([code], "index.html", { type: "text/html" }) },
+    ],
+  };
+}
+
+/** Siapkan `source` untuk /api/deploy: URL GitHub apa adanya, atau ZIP ke Blob. */export async function prepareSource(input: DeployInput): Promise<DeploySource> {
   if (input.tab === "github") {
     return { type: "github", url: input.githubUrl.trim() };
   }

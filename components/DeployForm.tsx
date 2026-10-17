@@ -8,6 +8,7 @@ import {
   IconCode,
   IconCopy,
   IconExternal,
+  IconFile,
   IconFolder,
   IconGithub,
   IconRefresh,
@@ -19,6 +20,7 @@ import { DONE_STEP_INDEX, STAGE_INDEX, type SourceType } from "@/lib/deploy-prot
 import {
   NAME_CHECK_DEBOUNCE_MS,
   checkName,
+  pastedPick,
   startDeploy,
   type Picked,
   type PickedFile,
@@ -37,7 +39,7 @@ import {
 } from "@/lib/validate";
 import { NAME_TAKEN_MESSAGE, type ErrorField } from "@/lib/errors";
 
-type Tab = SourceType;
+type Tab = SourceType | "paste";
 type CheckState = "idle" | "checking" | "ok" | "taken";
 type DeployState = "idle" | "working" | "success" | "error";
 
@@ -60,6 +62,7 @@ type FsEntry = FsFileEntry | FsDirEntry;
 const TABS: Array<{ id: Tab; label: string; Icon: typeof IconGithub }> = [
   { id: "github", label: "GitHub", Icon: IconGithub },
   { id: "zip", label: "ZIP", Icon: IconArchive },
+  { id: "paste", label: "Tempel kode", Icon: IconCode },
 ];
 
 /** Label langkah UI; indeksnya dijaga STAGE_INDEX/DONE_STEP_INDEX dari protokol. */
@@ -117,6 +120,7 @@ export default function DeployForm() {
   });
   const [tab, setTab] = useState<Tab>("github");
   const [githubUrl, setGithubUrl] = useState("");
+  const [code, setCode] = useState("");
   const [pick, setPick] = useState<Picked | null>(null);
   const [dragOver, setDragOver] = useState(false);
   const [state, setState] = useState<DeployState>("idle");
@@ -158,7 +162,11 @@ export default function DeployForm() {
   }, [name]);
 
   const sourceReady =
-    tab === "github" ? githubUrl.trim().length > 0 : pick !== null;
+    tab === "github"
+      ? githubUrl.trim().length > 0
+      : tab === "paste"
+        ? code.trim().length > 0
+        : pick !== null;
 
   const working = state === "working";
   const ready = isValidName(name) && check.state === "ok" && sourceReady;
@@ -277,7 +285,14 @@ export default function DeployForm() {
 
     try {
       await startDeploy(
-        { name, tab, githubUrl, pick },
+        {
+          name,
+          // Kode yang ditempel masuk lewat jalur ZIP sebagai satu berkas
+          // index.html, jadi server tak perlu tahu soal tab ini.
+          tab: tab === "paste" ? "zip" : tab,
+          githubUrl,
+          pick: tab === "paste" ? pastedPick(code) : pick,
+        },
         {
           onStage: (stage) => setStageIdx(STAGE_INDEX[stage]),
           onDone: ({ url, renamed }) => {
@@ -462,7 +477,7 @@ export default function DeployForm() {
                               htmlInputRef.current?.click();
                             }}
                           >
-                            <IconCode size={15} />
+                            <IconFile size={15} />
                             Pilih file HTML
                           </button>
                         </span>
@@ -536,6 +551,23 @@ export default function DeployForm() {
                     <p className="mt-2 text-[13px] text-faint">
                       Maksimal {MAX_ZIP_BYTES / 1024 / 1024} MB dan {MAX_FILES} file. Wajib ada
                       index.html di root; satu file HTML tunggal otomatis jadi index.html.
+                    </p>
+                  </div>
+                )}
+
+                {tab === "paste" && (
+                  <div>
+                    <textarea
+                      className="code-input"
+                      value={code}
+                      spellCheck={false}
+                      placeholder={
+                        '<!doctype html>\n<html lang="id">\n  <head>\n    <meta charset="utf-8" />\n    <title>Halo</title>\n  </head>\n  <body>\n    <h1>Halo</h1>\n  </body>\n</html>'
+                      }
+                      onChange={(event) => setCode(event.target.value)}
+                    />
+                    <p className="mt-2 text-[13px] text-faint">
+                      Kode disimpan sebagai index.html. CSS dan JS taruh inline di dalamnya.
                     </p>
                   </div>
                 )}
