@@ -445,7 +445,8 @@ body {
 .seg {
   position: relative;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  /* Jumlah kolom ikut jumlah tab; komponen mengirim --seg-count. */
+  grid-template-columns: repeat(var(--seg-count, 2), 1fr);
   padding: 4px;
   border-radius: 12px;
   border: 1px solid var(--line);
@@ -456,7 +457,7 @@ body {
   top: 4px;
   bottom: 4px;
   left: 4px;
-  width: calc((100% - 8px) / 2);
+  width: calc((100% - 8px) / var(--seg-count, 2));
   border-radius: 8px;
   background: var(--surface3);
   border: 1px solid var(--line2);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type CSSProperties } from "react";
 import {
   IconAlert,
   IconArchive,
@@ -377,7 +377,13 @@ export default function DeployForm() {
               Sumber
             </span>
             <div role="group" aria-labelledby="source-label">
-              <div role="tablist" aria-label="Sumber situs" onKeyDown={onTabKeyDown} className="seg">
+              <div
+                role="tablist"
+                aria-label="Sumber situs"
+                onKeyDown={onTabKeyDown}
+                className="seg"
+                style={{ "--seg-count": TABS.length } as CSSProperties}
+              >
                 <div
                   aria-hidden
                   className="seg-thumb"
