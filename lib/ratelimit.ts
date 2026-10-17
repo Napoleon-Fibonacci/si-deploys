@@ -22,6 +22,16 @@ export const RATE_LIMITS = {
     windowMs: 60 * 60 * 1000,
     message: "Terlalu banyak deploy. Coba lagi dalam satu jam.",
   },
+  /**
+   * Menerbitkan token unggah Blob. Scope sendiri, bukan warisan `deploy`:
+   * satu percobaan deploy mengunggah ZIP dulu, jadi kalau keduanya berbagi
+   * jatah, tiap percobaan memakan dua jatah dan tinggal 2,5 percobaan sejam.
+   */
+  upload: {
+    max: 20,
+    windowMs: 60 * 60 * 1000,
+    message: "Terlalu banyak unggahan. Coba lagi dalam satu jam.",
+  },
   adminLogin: {
     max: 10,
     windowMs: 15 * 60 * 1000,

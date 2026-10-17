@@ -14,7 +14,7 @@ export const dynamic = "force-dynamic";
  */
 export async function POST(request: NextRequest) {
   try {
-    await enforceRateLimit("deploy", getClientIp(request));
+    await enforceRateLimit("upload", getClientIp(request));
   } catch (error) {
     return toErrorResponse(error);
   }

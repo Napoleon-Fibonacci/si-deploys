@@ -51,7 +51,7 @@ lib/
   validate.ts               nama, path, ukuran, anti zip bomb + batas bersama
   deployments.ts            pemilik tabel deployments: kosakata status,
                             transaksi slot, transisi, bacaan, sapuan
-  ratelimit.ts              kuota jendela tetap ber-scope (deploy, adminLogin)
+  ratelimit.ts              kuota jendela tetap ber-scope (deploy, upload, adminLogin)
   admin.ts                  Sesi admin: HMAC cookie + cek password
   *.test.ts                 Tes Vitest: validate, sources, protocol, errors,
                             deploy-client, deployments, ratelimit, vercel
@@ -175,9 +175,12 @@ admin memang butuh database. Pesan yang muncul dibedakan: `?error=limit`,
   penerbitan token Blob (keputusan lokal, bukan 500).
 - Rate limit adalah satu tabel (`rate_limits`) dengan kolom `scope`, bukan
   satu tabel per kebijakan: `RATE_LIMITS` di `lib/ratelimit.ts` memegang
-  batas, jendela, dan pesan tiap scope (`deploy` 5/jam, `adminLogin`
-  10/15 menit). Halaman login mengimpor pesan itu, jadi kalimatnya tak bisa
-  berbeda dari yang dipakai server. Jendelanya tetap (bukan meluncur):
+  batas, jendela, dan pesan tiap scope (`deploy` 5/jam, `upload` 20/jam,
+  `adminLogin` 10/15 menit). Menerbitkan token unggah punya scope sendiri
+  karena ia bukan deploy: satu percobaan deploy mengunggah ZIP dulu, jadi
+  bila keduanya berbagi jatah, tiap percobaan memakan dua jatah. Halaman
+  login mengimpor pesan itu, jadi kalimatnya tak bisa berbeda dari yang
+  dipakai server. Jendelanya tetap (bukan meluncur):
   ledakan tepat di batas jendela masih mungkin, dan kuota per IP saja tak
   menahan serangan dari banyak IP — cukup untuk panel milik sendiri, bukan
   untuk panel banyak pengguna. Kegagalan database di login admin ditolak
