@@ -93,12 +93,17 @@ export async function createDeployment(
     throw new VercelApiError("Deploy gagal di sisi Vercel. Coba lagi sebentar lagi.");
   }
 
-  const url = pickUrl(final, name);
-  if (!url || !final.projectId) {
+  const projectId = final.projectId;
+  const url =
+    pickAliasUrl(final, name) ??
+    (projectId ? await projectProductionUrl(projectId) : null) ??
+    (final.url ? `https://${final.url}` : null);
+
+  if (!url || !projectId) {
     throw new VercelApiError("Deploy gagal di sisi Vercel (URL tidak ditemukan).");
   }
   return {
-    projectId: final.projectId,
+    projectId,
     deploymentId: final.id,
     url,
     renamed: !url.startsWith(`https://${name}.vercel.app`),
@@ -135,8 +140,11 @@ async function pollDeployment(
   throw new VercelApiError("Deploy belum selesai dalam batas waktu. Coba lagi nanti.", 504);
 }
 
-/** Pilih URL produksi dari alias. Hindari alias branch (berisi -git-). */
-function pickUrl(deployment: { alias?: string[]; url?: string }, name: string): string | null {
+/** Ambil alias bersih dari deployment. Hindari alias branch (berisi -git-). */
+function pickAliasUrl(
+  deployment: { alias?: string[]; url?: string },
+  name: string
+): string | null {
   const aliases = deployment.alias ?? [];
   const exact = aliases.find((alias) => alias === `${name}.vercel.app`);
   if (exact) return `https://${exact}`;
@@ -144,8 +152,29 @@ function pickUrl(deployment: { alias?: string[]; url?: string }, name: string): 
     (alias) => alias.endsWith(".vercel.app") && !alias.includes("-git-")
   );
   if (stable) return `https://${stable}`;
-  if (deployment.url) return `https://${deployment.url}`;
   return null;
+}
+
+/**
+ * URL produksi milik project, dibaca dari `targets.production.alias`.
+ *
+ * Perlu karena deployment yang baru berstatus READY kadang belum membawa
+ * alias apa pun. Saat itu satu-satunya URL di tangan adalah URL ber-hash
+ * milik deployment itu, dan URL ber-hash dilindungi Vercel Authentication:
+ * yang membukanya mendarat di dinding login Vercel, bukan di situsnya.
+ */
+async function projectProductionUrl(projectId: string): Promise<string | null> {
+  const response = await fetch(`${API}/v9/projects/${encodeURIComponent(projectId)}${teamQuery()}`, {
+    headers: headers(),
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (!response.ok) return null;
+  const project = (await response.json()) as {
+    targets?: { production?: { alias?: string[] } };
+  };
+  const aliases = project.targets?.production?.alias ?? [];
+  const host = aliases.find((alias) => alias.endsWith(".vercel.app")) ?? aliases[0];
+  return host ? `https://${host}` : null;
 }
 
 /** Hapus project di Vercel berdasarkan vercel_project_id dari database. 404 = sudah hilang. */

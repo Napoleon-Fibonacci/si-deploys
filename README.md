@@ -209,6 +209,12 @@ admin memang butuh database. Pesan yang muncul dibedakan: `?error=limit`,
 - Endpoint Vercel sudah dicek ke dokumentasi resmi (14 Okt 2026):
   `POST /v13/deployments` (query `skipAutoDetectionConfirmation`, `teamId`),
   `GET /v13/deployments/{idOrUrl}`, `DELETE /v9/projects/{idOrName}`.
+- URL hasil deploy diambil dari alias produksi milik project (`GET
+  /v9/projects/{id}`, bagian `targets.production.alias`), bukan dari `url`
+  deployment. Deployment yang baru berstatus READY kadang belum membawa alias,
+  dan URL ber-hash miliknya dilindungi Vercel Authentication: yang membukanya
+  mendarat di dinding login Vercel, bukan di situsnya. Alias deployment tetap
+  dicoba dulu karena lebih murah; project ditanya hanya kalau daftar itu kosong.
   Temuan penting: entri `files` **wajib** menyertakan `encoding: "base64"`.
   Tanpa itu Vercel membaca `data` sebagai teks utf-8, jadi tiap file terisi
   string base64, bukan isi aslinya. Tes di `lib/vercel.test.ts` menjaga

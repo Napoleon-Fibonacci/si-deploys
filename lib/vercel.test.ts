@@ -43,7 +43,10 @@ const FILES = [{ path: "index.html", data: new TextEncoder().encode("<h1>hi</h1>
 describe("createDeployment", () => {
   it("mengirim file sebagai base64 dengan encoding yang benar", async () => {
     vi.stubEnv("VERCEL_TOKEN", "tok");
-    const mock = stubApi({ POST: json({ id: "dpl_1" }), GET: ready() });
+    const mock = stubApi({
+      POST: json({ id: "dpl_1" }),
+      GET: [ready(), json({ targets: {} })],
+    });
 
     await createDeployment("abc", [
       ...FILES,
@@ -79,7 +82,10 @@ describe("createDeployment", () => {
   it("menambahkan teamId ke query kalau diset", async () => {
     vi.stubEnv("VERCEL_TOKEN", "tok");
     vi.stubEnv("VERCEL_TEAM_ID", "team_1");
-    const mock = stubApi({ POST: json({ id: "dpl_1" }), GET: ready() });
+    const mock = stubApi({
+      POST: json({ id: "dpl_1" }),
+      GET: [ready(), json({ targets: {} })],
+    });
 
     await createDeployment("abc", FILES);
 
@@ -113,6 +119,36 @@ describe("createDeployment", () => {
     stubApi({
       POST: json({ id: "dpl_1" }),
       GET: ready({ alias: ["abc-9f3k2.vercel.app", "abc-git-main-u.vercel.app"] }),
+    });
+
+    const result = await createDeployment("abc", FILES);
+
+    expect(result.url).toBe("https://abc-9f3k2.vercel.app");
+    expect(result.renamed).toBe(true);
+  });
+
+  it("menanya alias produksi project saat deployment belum punya alias", async () => {
+    vi.stubEnv("VERCEL_TOKEN", "tok");
+    const mock = stubApi({
+      POST: json({ id: "dpl_1" }),
+      GET: [
+        ready({ alias: [], url: "abc-9f3k2-ditzs-projects.vercel.app" }),
+        json({ targets: { production: { alias: ["abc.vercel.app"] } } }),
+      ],
+    });
+
+    const result = await createDeployment("abc", FILES);
+
+    expect(result.url).toBe("https://abc.vercel.app");
+    expect(result.renamed).toBe(false);
+    expect(String(mock.mock.calls.at(-1)?.[0])).toBe("https://api.vercel.com/v9/projects/prj_1");
+  });
+
+  it("memakai URL deployment kalau project tak punya alias produksi", async () => {
+    vi.stubEnv("VERCEL_TOKEN", "tok");
+    stubApi({
+      POST: json({ id: "dpl_1" }),
+      GET: [ready({ alias: [], url: "abc-9f3k2.vercel.app" }), json({ targets: {} })],
     });
 
     const result = await createDeployment("abc", FILES);
