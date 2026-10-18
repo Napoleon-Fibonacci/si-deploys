@@ -7,7 +7,17 @@ import SideIcons from "@/components/SideIcons";
 import { IconRocket } from "@/components/icons";
 import { OPEN_GRAPH, SITE } from "@/lib/site";
 
-export const dynamic = "force-dynamic";
+/**
+ * Halaman depan dirender dari cache 30 detik, bukan tiap kunjungan.
+ *
+ * Isinya sama untuk semua orang — daftar project disamarkan di server — tapi
+ * merender ulang dari database tiap kali membuat byte pertama butuh ~1,5 detik.
+ * Crawler WhatsApp cuma memberi tenggat beberapa detik dan tak punya fitur
+ * "coba lagi", jadi sering putus sebelum tag OG terbaca; hasilnya tautan
+ * muncul polos tanpa kartu. Data di sini paling lama basi 30 detik, dan itu
+ * tak terasa untuk penanda kapasitas serta daftar "Sedang hidup".
+ */
+export const revalidate = 30;
 
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
