@@ -3,6 +3,7 @@ import ActiveList from "@/components/ActiveList";
 import Background from "@/components/Background";
 import Capacity from "@/components/Capacity";
 import DeployForm from "@/components/DeployForm";
+import Guide from "@/components/Guide";
 import SideIcons from "@/components/SideIcons";
 import { IconRocket } from "@/components/icons";
 import { OPEN_GRAPH, SITE } from "@/lib/site";
@@ -80,6 +81,7 @@ export default function Home() {
             </header>
             <DeployForm />
             <ActiveList />
+            <Guide />
           </div>
         </main>
       </div>

@@ -964,6 +964,100 @@ body {
   background: color-mix(in srgb, var(--err) 14%, var(--surface3));
 }
 
+/* ---------- Panduan pengguna baru ---------- */
+
+.guide {
+  margin-top: 56px;
+  padding-top: 28px;
+  border-top: 1px solid var(--line);
+}
+.guide-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+}
+.guide-list {
+  counter-reset: langkah;
+  list-style: none;
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+.guide-list > li {
+  position: relative;
+  padding-left: 32px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.guide-list > li::before {
+  counter-increment: langkah;
+  content: counter(langkah);
+  position: absolute;
+  left: 0;
+  top: 1px;
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--surface2);
+  color: var(--ink);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+.guide-list strong,
+.guide-list em,
+.guide-list code {
+  color: var(--ink);
+  font-style: normal;
+}
+.guide-list code {
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--surface2);
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+}
+
+.guide-prompt {
+  margin-top: 22px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface2);
+  overflow: hidden;
+}
+.guide-prompt-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px 8px 14px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--muted);
+}
+.guide-prompt-body {
+  margin: 0;
+  padding: 14px;
+  font-family: var(--font-mono);
+  font-size: 12.5px;
+  line-height: 1.65;
+  color: var(--ink);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.guide-note {
+  margin-top: 18px;
+  font-size: 12px;
+  line-height: 1.7;
+  color: var(--faint);
+}
+
 /* ---------- prefers-reduced-motion ---------- */
 
 @media (prefers-reduced-motion: reduce) {
