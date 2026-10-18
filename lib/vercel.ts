@@ -94,10 +94,7 @@ export async function createDeployment(
   }
 
   const projectId = final.projectId;
-  const url =
-    pickAliasUrl(final, name) ??
-    (projectId ? await projectProductionUrl(projectId) : null) ??
-    (final.url ? `https://${final.url}` : null);
+  const url = await resolvePublicUrl(final, name);
 
   if (!url || !projectId) {
     throw new VercelApiError("Deploy gagal di sisi Vercel (URL tidak ditemukan).");
@@ -140,41 +137,97 @@ async function pollDeployment(
   throw new VercelApiError("Deploy belum selesai dalam batas waktu. Coba lagi nanti.", 504);
 }
 
-/** Ambil alias bersih dari deployment. Hindari alias branch (berisi -git-). */
-function pickAliasUrl(
-  deployment: { alias?: string[]; url?: string },
-  name: string
-): string | null {
-  const aliases = deployment.alias ?? [];
-  const exact = aliases.find((alias) => alias === `${name}.vercel.app`);
-  if (exact) return `https://${exact}`;
-  const stable = aliases.find(
-    (alias) => alias.endsWith(".vercel.app") && !alias.includes("-git-")
-  );
-  if (stable) return `https://${stable}`;
-  return null;
+/** Berapa kali alias produksi dicek, dan jeda antar percobaan. */
+const URL_TRIES = 2;
+const URL_WAIT_MS = 1_500;
+
+/**
+ * Pilih host yang layak dibagikan.
+ *
+ * Cocok persis dengan nama project lebih dulu, lalu host terpendek. Alias
+ * branch (`-git-`) dibuang karena itu alamat preview. URL milik deployment itu
+ * sendiri juga tidak pernah masuk daftar kandidat: bentuknya
+ * `nama-tim-hash.vercel.app` dan dilindungi Vercel Authentication, jadi yang
+ * membukanya mendarat di dinding login Vercel.
+ */
+export function pickHost(hosts: string[], name: string): string | null {
+  const clean = hosts.filter((host) => host.endsWith(".vercel.app") && !host.includes("-git-"));
+  const exact = clean.find((host) => host === `${name}.vercel.app`);
+  if (exact) return exact;
+  return [...clean].sort((a, b) => a.length - b.length)[0] ?? null;
+}
+
+/** Ambil JSON dari API Vercel. `null` kalau gagal, supaya pemanggil bisa coba sumber lain. */
+async function getJson<T>(path: string): Promise<T | null> {
+  try {
+    const response = await fetch(`${API}${path}`, {
+      headers: headers(),
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (!response.ok) return null;
+    return (await response.json()) as T;
+  } catch {
+    return null;
+  }
 }
 
 /**
- * URL produksi milik project, dibaca dari `targets.production.alias`.
- *
- * Perlu karena deployment yang baru berstatus READY kadang belum membawa
- * alias apa pun. Saat itu satu-satunya URL di tangan adalah URL ber-hash
- * milik deployment itu, dan URL ber-hash dilindungi Vercel Authentication:
- * yang membukanya mendarat di dinding login Vercel, bukan di situsnya.
+ * Semua kandidat host produksi, dari tiga tempat Vercel menyimpannya:
+ * alias deployment, `targets.production.alias` milik project, dan daftar
+ * domain project (difilter ke domain produksi saja). Ketiganya bisa kosong
+ * sesaat setelah status READY, jadi yang pertama terisi yang menang.
  */
-async function projectProductionUrl(projectId: string): Promise<string | null> {
-  const response = await fetch(`${API}/v9/projects/${encodeURIComponent(projectId)}${teamQuery()}`, {
-    headers: headers(),
-    signal: AbortSignal.timeout(15_000),
-  });
-  if (!response.ok) return null;
-  const project = (await response.json()) as {
-    targets?: { production?: { alias?: string[] } };
-  };
-  const aliases = project.targets?.production?.alias ?? [];
-  const host = aliases.find((alias) => alias.endsWith(".vercel.app")) ?? aliases[0];
-  return host ? `https://${host}` : null;
+async function productionHosts(
+  deployment: { id: string; alias?: string[] },
+  projectId?: string
+): Promise<string[]> {
+  const [fresh, project, domains] = await Promise.all([
+    getJson<{ alias?: string[] }>(
+      `/v13/deployments/${encodeURIComponent(deployment.id)}${teamQuery()}`
+    ),
+    projectId
+      ? getJson<{ targets?: { production?: { alias?: string[] } } }>(
+          `/v9/projects/${encodeURIComponent(projectId)}${teamQuery()}`
+        )
+      : null,
+    projectId
+      ? getJson<{ domains?: Array<{ name?: string; gitBranch?: string | null }> }>(
+          // `production=true` menyaring domain preview dan alias branch.
+          `/v9/projects/${encodeURIComponent(projectId)}/domains?production=true${teamQuery().replace("?", "&")}`
+        )
+      : null,
+  ]);
+
+  return [
+    // Dua-duanya ikut: kalau ambil ulang gagal, data lama tetap terpakai.
+    ...(deployment.alias ?? []),
+    ...(fresh?.alias ?? []),
+    ...(project?.targets?.production?.alias ?? []),
+    ...(domains?.domains ?? [])
+      .filter((domain) => domain.name && !domain.gitBranch)
+      .map((domain) => domain.name as string),
+  ];
+}
+
+/**
+ * URL hasil deploy.
+ *
+ * Dicoba lebih dari sekali karena alias produksi kadang baru terpasang
+ * beberapa detik setelah status READY; sekali cek bisa mendapat daftar kosong
+ * dan jatuh ke URL ber-hash. `url` milik deployment hanya dipakai kalau semua
+ * sumber benar-benar tidak memberi apa pun — URL itu dilindungi Vercel
+ * Authentication, jadi yang membukanya mendarat di dinding login Vercel.
+ */
+async function resolvePublicUrl(
+  deployment: { id: string; projectId?: string; alias?: string[]; url?: string },
+  name: string
+): Promise<string | null> {
+  for (let attempt = 0; attempt < URL_TRIES; attempt++) {
+    const host = pickHost(await productionHosts(deployment, deployment.projectId), name);
+    if (host) return `https://${host}`;
+    if (attempt < URL_TRIES - 1) await sleep(URL_WAIT_MS);
+  }
+  return deployment.url ? `https://${deployment.url}` : null;
 }
 
 /** Hapus project di Vercel berdasarkan vercel_project_id dari database. 404 = sudah hilang. */

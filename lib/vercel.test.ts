@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { VercelApiError, createDeployment, deleteProject } from "./vercel";
+import { VercelApiError, createDeployment, deleteProject, pickHost } from "./vercel";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -17,7 +17,9 @@ function stubApi(routes: Record<string, Response | Response[]>): ReturnType<type
     const list = queue.get(method) ?? [];
     const next = list.length > 1 ? list.shift() : list[0];
     if (!next) throw new Error(`tak ada respons untuk ${method}`);
-    return next;
+    // Klon: satu respons boleh dipakai berkali-kali, karena badan Response
+    // hanya bisa dikonsumsi sekali.
+    return next.clone();
   });
   vi.stubGlobal("fetch", mock);
   return mock;
@@ -40,12 +42,39 @@ function ready(overrides: Record<string, unknown> = {}): Response {
 
 const FILES = [{ path: "index.html", data: new TextEncoder().encode("<h1>hi</h1>") }];
 
+/** Jawaban GET /v9/projects/{id}/domains. */
+function domains(...names: string[]): Response {
+  return json({ domains: names.map((name) => ({ name, gitBranch: null })) });
+}
+
+describe("pickHost", () => {
+  it("mendahulukan host yang persis sama dengan nama project", () => {
+    expect(pickHost(["abc-9f3k2-ditzs-projects.vercel.app", "abc.vercel.app"], "abc")).toBe(
+      "abc.vercel.app"
+    );
+  });
+
+  it("tanpa yang persis, ambil yang terpendek", () => {
+    expect(pickHost(["abc-9f3k2-ditzs-projects.vercel.app", "abc.vercel.app"], "lain")).toBe(
+      "abc.vercel.app"
+    );
+  });
+
+  it("membuang alias branch dan bukan .vercel.app", () => {
+    expect(pickHost(["abc-git-main-u.vercel.app", "situsku.id"], "abc")).toBeNull();
+  });
+
+  it("null kalau tak ada kandidat", () => {
+    expect(pickHost([], "abc")).toBeNull();
+  });
+});
+
 describe("createDeployment", () => {
   it("mengirim file sebagai base64 dengan encoding yang benar", async () => {
     vi.stubEnv("VERCEL_TOKEN", "tok");
     const mock = stubApi({
       POST: json({ id: "dpl_1" }),
-      GET: [ready(), json({ targets: {} })],
+      GET: [ready(), domains("abc.vercel.app")],
     });
 
     await createDeployment("abc", [
@@ -84,7 +113,7 @@ describe("createDeployment", () => {
     vi.stubEnv("VERCEL_TEAM_ID", "team_1");
     const mock = stubApi({
       POST: json({ id: "dpl_1" }),
-      GET: [ready(), json({ targets: {} })],
+      GET: [ready(), domains("abc.vercel.app")],
     });
 
     await createDeployment("abc", FILES);
@@ -127,13 +156,16 @@ describe("createDeployment", () => {
     expect(result.renamed).toBe(true);
   });
 
-  it("menanya alias produksi project saat deployment belum punya alias", async () => {
+  it("memakai domain project saat alias deployment masih kosong", async () => {
     vi.stubEnv("VERCEL_TOKEN", "tok");
     const mock = stubApi({
       POST: json({ id: "dpl_1" }),
       GET: [
-        ready({ alias: [], url: "abc-9f3k2-ditzs-projects.vercel.app" }),
-        json({ targets: { production: { alias: ["abc.vercel.app"] } } }),
+        ready({
+          alias: [],
+          url: "abc-ditzs-projects-9f3k2.vercel.app",
+        }),
+        domains("abc.vercel.app"),
       ],
     });
 
@@ -141,14 +173,34 @@ describe("createDeployment", () => {
 
     expect(result.url).toBe("https://abc.vercel.app");
     expect(result.renamed).toBe(false);
-    expect(String(mock.mock.calls.at(-1)?.[0])).toBe("https://api.vercel.com/v9/projects/prj_1");
+    expect(String(mock.mock.calls.at(-1)?.[0])).toBe(
+      "https://api.vercel.com/v9/projects/prj_1/domains?production=true"
+    );
   });
 
-  it("memakai URL deployment kalau project tak punya alias produksi", async () => {
+  it("mengabaikan URL ber-hash walau ada di daftar alias", async () => {
     vi.stubEnv("VERCEL_TOKEN", "tok");
     stubApi({
       POST: json({ id: "dpl_1" }),
-      GET: [ready({ alias: [], url: "abc-9f3k2.vercel.app" }), json({ targets: {} })],
+      GET: [
+        ready({
+          alias: ["abc-ditzs-projects-9f3k2.vercel.app"],
+          url: "abc-ditzs-projects-9f3k2.vercel.app",
+        }),
+        domains("abc.vercel.app"),
+      ],
+    });
+
+    const result = await createDeployment("abc", FILES);
+
+    expect(result.url).toBe("https://abc.vercel.app");
+  });
+
+  it("jatuh ke URL deployment kalau tak ada domain sama sekali", async () => {
+    vi.stubEnv("VERCEL_TOKEN", "tok");
+    stubApi({
+      POST: json({ id: "dpl_1" }),
+      GET: [ready({ alias: [], url: "abc-9f3k2.vercel.app" }), domains()],
     });
 
     const result = await createDeployment("abc", FILES);

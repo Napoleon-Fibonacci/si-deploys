@@ -243,13 +243,17 @@ admin memang butuh database. Pesan yang muncul dibedakan: `?error=limit`,
   " — Si Deploy" sekali, jadi judul halaman admin tak boleh memuatnya lagi.
 - Endpoint Vercel sudah dicek ke dokumentasi resmi (14 Okt 2026):
   `POST /v13/deployments` (query `skipAutoDetectionConfirmation`, `teamId`),
-  `GET /v13/deployments/{idOrUrl}`, `DELETE /v9/projects/{idOrName}`.
-- URL hasil deploy diambil dari alias produksi milik project (`GET
-  /v9/projects/{id}`, bagian `targets.production.alias`), bukan dari `url`
-  deployment. Deployment yang baru berstatus READY kadang belum membawa alias,
-  dan URL ber-hash miliknya dilindungi Vercel Authentication: yang membukanya
-  mendarat di dinding login Vercel, bukan di situsnya. Alias deployment tetap
-  dicoba dulu karena lebih murah; project ditanya hanya kalau daftar itu kosong.
+  `GET /v13/deployments/{idOrUrl}`, `DELETE /v9/projects/{idOrName}`,
+  `GET /v9/projects/{idOrName}/domains` (query `production=true`).
+- URL hasil deploy dicari ke tiga tempat sekaligus: alias deployment
+  (`GET /v13/deployments/{id}`), `targets.production.alias` project, dan daftar
+  domain project (`GET /v9/projects/{id}/domains?production=true`). Host yang
+  persis sama dengan nama project menang; kalau tidak ada, yang terpendek.
+  Alias branch (`-git-`) dibuang, dan URL milik deployment itu sendiri — bentuk
+  `nama-tim-hash.vercel.app` — tidak pernah dipilih selama ada kandidat lain,
+  karena URL itu dilindungi Vercel Authentication: yang membukanya mendarat di
+  dinding login Vercel, bukan di situsnya. Pencarian diulang sekali setelah 1,5
+  detik karena alias produksi kadang baru terpasang sesaat setelah status READY.
   Temuan penting: entri `files` **wajib** menyertakan `encoding: "base64"`.
   Tanpa itu Vercel membaca `data` sebagai teks utf-8, jadi tiap file terisi
   string base64, bukan isi aslinya. Tes di `lib/vercel.test.ts` menjaga
