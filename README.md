@@ -218,6 +218,13 @@ admin memang butuh database. Pesan yang muncul dibedakan: `?error=limit`,
   tombol admin hanya jaring pengaman. Sapuan yang sama juga membuang jendela
   `rate_limits` yang sudah kedaluwarsa, supaya tabel penghitungnya tidak
   menumpuk selamanya.
+- Sapuan juga **merapikan baris yang mengaku hidup padahal project-nya sudah
+  tidak ada di Vercel** (`reconcileGone`): project bisa dihapus dari dasbor
+  Vercel di luar aplikasi ini, dan tanpa pemeriksaan itu barisnya tetap
+  berstatus `active` — dipajang "Sedang hidup" di halaman depan, memakai slot,
+  dan mengunci namanya. Hanya jawaban 404 dari Vercel yang dipercaya; error lain
+  (jaringan putus, 403, 429, 500) dibiarkan `null` supaya nama tidak dibebaskan
+  saat situsnya sebenarnya masih melayani.
 - `/api/cron/cleanup` gagal-tertutup: yang lolos hanya sesi admin atau header
   `Authorization: Bearer CRON_SECRET`. Vercel **tidak** membuat `CRON_SECRET`
   sendiri — yang terjadi sebaliknya, env itu diisi manusia lalu Vercel

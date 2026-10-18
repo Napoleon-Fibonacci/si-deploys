@@ -4,6 +4,7 @@ import { sweepStale } from "@/lib/deployments";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+export const maxDuration = 60;
 
 /**
  * Pembersih berkala. Di Vercel Hobby cron hanya boleh

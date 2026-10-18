@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { VercelApiError, createDeployment, deleteProject, pickHost } from "./vercel";
+import { VercelApiError, createDeployment, deleteProject, pickHost, projectExists } from "./vercel";
 
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -253,5 +253,40 @@ describe("deleteProject", () => {
     stubApi({ DELETE: json({ error: { message: "boom" } }, 500) });
 
     await expect(deleteProject("prj_1")).rejects.toThrow("boom");
+  });
+});
+
+describe("projectExists", () => {
+  it("false kalau Vercel menjawab 404", async () => {
+    vi.stubEnv("VERCEL_TOKEN", "tok");
+    stubApi({ GET: json({ error: { message: "Not found" } }, 404) });
+
+    await expect(projectExists("prj_1")).resolves.toBe(false);
+  });
+
+  it("true kalau project masih ada", async () => {
+    vi.stubEnv("VERCEL_TOKEN", "tok");
+    stubApi({ GET: json({ id: "prj_1", name: "abc" }) });
+
+    await expect(projectExists("prj_1")).resolves.toBe(true);
+  });
+
+  it("null saat Vercel menjawab error lain, bukan 404", async () => {
+    vi.stubEnv("VERCEL_TOKEN", "tok");
+    stubApi({ GET: json({ error: { message: "rate limited" } }, 429) });
+
+    await expect(projectExists("prj_1")).resolves.toBeNull();
+  });
+
+  it("null saat jaringan putus, supaya nama tidak dibebaskan", async () => {
+    vi.stubEnv("VERCEL_TOKEN", "tok");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new Error("jaringan putus");
+      })
+    );
+
+    await expect(projectExists("prj_1")).resolves.toBeNull();
   });
 });

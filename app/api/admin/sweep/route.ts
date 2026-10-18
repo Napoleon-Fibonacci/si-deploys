@@ -4,6 +4,8 @@ import { sweepStale } from "@/lib/deployments";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
+/** Sapuan menyisir seluruh isi tabel ke API Vercel, jadi beri ruang lebih. */
+export const maxDuration = 60;
 
 /**
  * POST /api/admin/sweep — jalankan sapuan manual dari menu admin.
@@ -18,7 +20,7 @@ export async function POST(request: NextRequest) {
   let query = "?swept=0";
   try {
     const result = await sweepStale();
-    query = `?swept=1&failed=${result.failed}&deleted=${result.deleted}`;
+    query = `?swept=1&failed=${result.failed}&deleted=${result.deleted}&gone=${result.gone}`;
   } catch {
     query = "?swept=0";
   }

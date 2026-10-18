@@ -214,6 +214,7 @@ describe("sweepStale", () => {
       if (sql.startsWith("UPDATE deployments SET status = 'failed'")) {
         return { rows: [], rowCount: 2 };
       }
+      if (sql.includes("status = 'active'")) return { rows: [] };
       if (sql.includes("SELECT id, vercel_project_id")) {
         return { rows: [{ id: "d1", vercel_project_id: null }] };
       }
@@ -223,7 +224,7 @@ describe("sweepStale", () => {
     });
     useDatabase(adapter);
 
-    await expect(sweepStale()).resolves.toEqual({ failed: 2, deleted: 1, remaining: 0 });
+    await expect(sweepStale()).resolves.toEqual({ failed: 2, deleted: 1, gone: 0, remaining: 0 });
     expect(queries.some((entry) => entry.sql.includes("SET status = 'deleted'"))).toBe(true);
   });
 
@@ -242,6 +243,7 @@ describe("sweepStale", () => {
       if (sql.startsWith("UPDATE deployments SET status = 'failed'")) {
         return { rows: [], rowCount: 0 };
       }
+      if (sql.includes("status = 'active'")) return { rows: [] };
       if (sql.includes("SELECT id, vercel_project_id")) {
         return { rows: [{ id: "d1", vercel_project_id: "prj_1" }] };
       }
@@ -250,9 +252,59 @@ describe("sweepStale", () => {
     });
     useDatabase(adapter);
 
-    await expect(sweepStale()).resolves.toEqual({ failed: 0, deleted: 0, remaining: 1 });
+    await expect(sweepStale()).resolves.toEqual({
+      failed: 0,
+      deleted: 0,
+      gone: 0,
+      remaining: 1,
+    });
     expect(queries.some((entry) => entry.sql.includes("SET status = 'deleted'"))).toBe(false);
     vi.unstubAllEnvs();
+  });
+
+  it("menutup baris aktif yang project-nya sudah hilang di Vercel", async () => {
+    vi.stubEnv("VERCEL_TOKEN", "tok");
+    vi.stubGlobal("fetch", vi.fn(async () => new Response(null, { status: 404 })));
+    const { adapter, queries } = fake((sql) => {
+      if (sql.startsWith("UPDATE deployments SET status = 'failed'")) {
+        return { rows: [], rowCount: 0 };
+      }
+      if (sql.includes("status = 'active'")) {
+        return { rows: [{ id: "row-1", vercel_project_id: "prj_1" }] };
+      }
+      if (sql.includes("SELECT id, vercel_project_id")) return { rows: [] };
+      if (sql.includes("count(*)")) return { rows: [{ count: 0 }] };
+      return { rows: [] };
+    });
+    useDatabase(adapter);
+
+    await expect(sweepStale()).resolves.toEqual({ failed: 0, deleted: 0, gone: 1, remaining: 0 });
+    expect(queries.some((entry) => entry.sql.includes("SET status = 'deleted'"))).toBe(true);
+  });
+
+  it("tidak menutup baris aktif saat Vercel tak bisa dihubungi", async () => {
+    vi.stubEnv("VERCEL_TOKEN", "tok");
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () => {
+        throw new Error("jaringan putus");
+      })
+    );
+    const { adapter, queries } = fake((sql) => {
+      if (sql.startsWith("UPDATE deployments SET status = 'failed'")) {
+        return { rows: [], rowCount: 0 };
+      }
+      if (sql.includes("status = 'active'")) {
+        return { rows: [{ id: "row-1", vercel_project_id: "prj_1" }] };
+      }
+      if (sql.includes("SELECT id, vercel_project_id")) return { rows: [] };
+      if (sql.includes("count(*)")) return { rows: [{ count: 0 }] };
+      return { rows: [] };
+    });
+    useDatabase(adapter);
+
+    await expect(sweepStale()).resolves.toEqual({ failed: 0, deleted: 0, gone: 0, remaining: 0 });
+    expect(queries.some((entry) => entry.sql.includes("SET status = 'deleted'"))).toBe(false);
   });
 });
 

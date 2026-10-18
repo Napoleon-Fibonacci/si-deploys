@@ -2,7 +2,7 @@ import { getDatabase } from "./db";
 import type { SourceType } from "./deploy-protocol";
 import { AppError, NAME_TAKEN_MESSAGE } from "./errors";
 import { MAX_PROJECTS } from "./validate";
-import { deleteProject } from "./vercel";
+import { deleteProject, projectExists } from "./vercel";
 
 /**
  * Satu modul pemilik tabel `deployments`. Semua konsumen memanggil operasi
@@ -99,6 +99,8 @@ export interface AdminFilter {
 export interface SweepResult {
   failed: number;
   deleted: number;
+  /** Baris yang mengaku hidup tapi project-nya sudah tak ada di Vercel. */
+  gone: number;
   remaining: number;
 }
 
@@ -353,10 +355,50 @@ export async function listForAdmin(
 /* ---------- Janitor ---------- */
 
 /**
+ * Rapikan baris 'active' yang project-nya sudah tidak ada di Vercel.
+ *
+ * Project bisa hilang tanpa lewat aplikasi ini: dihapus dari dasbor Vercel,
+ * atau dibersihkan pemilik akun saat merapikan. Tanpa pemeriksaan ini barisnya
+ * tetap mengaku 'active' — halaman depan memajangnya sebagai "Sedang hidup",
+ * slotnya terpakai, dan namanya terkunci walau situsnya sudah tak ada.
+ *
+ * Hanya 404 yang dianggap bukti. Jawaban lain dari Vercel (`null`) dibiarkan
+ * apa adanya supaya nama tidak dibebaskan hanya karena API sedang tak bisa
+ * dihubungi — kalau salah bebaskan, orang lain bisa memakai nama itu sementara
+ * situs lamanya masih melayani.
+ */
+export async function reconcileGone(limit = MAX_PROJECTS): Promise<number> {
+  const result = await getDatabase().query<{ id: string; vercel_project_id: string }>(
+    `SELECT id, vercel_project_id FROM ${TABLE}
+     WHERE status = 'active' AND vercel_project_id IS NOT NULL
+     ORDER BY created_at ASC
+     LIMIT ${Math.max(1, Math.floor(limit))}`
+  );
+
+  let gone = 0;
+  // Dua belas permintaan sekaligus: cukup cepat untuk seluruh isi tabel (batas
+  // slot adalah batas atasnya), tapi tidak membanjiri API Vercel.
+  const CONCURRENCY = 12;
+  for (let start = 0; start < result.rows.length; start += CONCURRENCY) {
+    const batch = result.rows.slice(start, start + CONCURRENCY);
+    const checks = await Promise.all(
+      batch.map(async (row) => ((await projectExists(row.vercel_project_id)) === false ? row.id : null))
+    );
+    for (const id of checks) {
+      if (!id) continue;
+      await markDeleted(id);
+      gone += 1;
+    }
+  }
+  return gone;
+}
+
+/**
  * Sapuan manual (dipakai cron harian dan tombol admin):
  * pending basi ditandai failed, deleting yang menggantung diulang
- * penghapusannya di Vercel, dan jendela rate limit yang sudah kedaluwarsa
- * dibuang supaya tabelnya tidak menumpuk.
+ * penghapusannya di Vercel, baris yang project-nya sudah hilang dari Vercel
+ * ditutup, dan jendela rate limit yang sudah kedaluwarsa dibuang supaya
+ * tabelnya tidak menumpuk.
  */
 export async function sweepStale(limit = 10): Promise<SweepResult> {
   await getDatabase().query(PRUNE_RATE_LIMITS_SQL);
@@ -383,6 +425,9 @@ export async function sweepStale(limit = 10): Promise<SweepResult> {
     }
   }
 
+  // Setelah hapus-menggantung dirapikan, sisanya yang masih mengaku hidup.
+  const gone = await reconcileGone();
+
   const remaining = await getDatabase().query<{ count: number }>(
     `SELECT count(*)::int AS count FROM ${TABLE} WHERE status = 'deleting'`
   );
@@ -390,6 +435,7 @@ export async function sweepStale(limit = 10): Promise<SweepResult> {
   return {
     failed: failedResult.rowCount ?? 0,
     deleted,
+    gone,
     remaining: remaining.rows[0]?.count ?? 0,
   };
 }

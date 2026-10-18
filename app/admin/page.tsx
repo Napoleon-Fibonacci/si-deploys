@@ -62,9 +62,11 @@ function flashMessage(params: Record<string, string | string[] | undefined>): Fl
     typeof params[key] === "string" ? (params[key] as string) : null;
 
   if (params.swept === "1") {
+    const gone = typeof params.gone === "string" && params.gone !== "0" ? Number(params.gone) : 0;
+    const base = `Sapuan selesai: ${params.failed ?? 0} pending basi ditandai gagal, ${params.deleted ?? 0} project dihapus di Vercel.`;
     return {
       tone: "ok",
-      text: `Sapuan selesai: ${params.failed ?? 0} pending basi ditandai gagal, ${params.deleted ?? 0} project dihapus di Vercel.`,
+      text: gone > 0 ? `${base} ${gone} baris ditutup karena project-nya sudah tak ada di Vercel.` : base,
     };
   }
   if (params.swept === "0") return { tone: "err", text: "Sapuan gagal dijalankan. Coba lagi." };

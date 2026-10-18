@@ -243,3 +243,25 @@ export async function deleteProject(projectId: string): Promise<void> {
   if (response.ok || response.status === 404) return;
   throw await parseError(response, "Gagal menghapus project lama di Vercel.");
 }
+
+/**
+ * Apakah project itu masih ada di Vercel?
+ *
+ * Dipakai untuk merapikan baris yang mengaku hidup padahal project-nya sudah
+ * dihapus dari luar aplikasi ini — misalnya lewat dasbor Vercel. `false` hanya
+ * kalau Vercel menjawab 404 dengan yakin; jawaban lain (jaringan putus, 403,
+ * 429, 500) menjadi `null` supaya pemanggil tidak membebaskan nama dan slot
+ * hanya karena API sedang tidak bisa dihubungi.
+ */
+export async function projectExists(projectId: string): Promise<boolean | null> {
+  try {
+    const response = await fetch(
+      `${API}/v9/projects/${encodeURIComponent(projectId)}${teamQuery()}`,
+      { headers: headers(), signal: AbortSignal.timeout(15_000) }
+    );
+    if (response.status === 404) return false;
+    return response.ok ? true : null;
+  } catch {
+    return null;
+  }
+}
