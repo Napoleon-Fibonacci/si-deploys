@@ -231,6 +231,20 @@ admin memang butuh database. Pesan yang muncul dibedakan: `?error=limit`,
   menyertakan headernya saat memanggil cron. Sebelumnya, tanpa env itu,
   endpoint-nya terbuka: siapa pun bisa memicu sapuan berulang kali, dan tiap
   sapuan menembak API Vercel serta menyentuh database.
+- Ukuran function sudah diukur (18 Okt 2026), bukan dikira-kira: tiap bundel
+  1,2–1,7 MB, dan kode kita sendiri 295 KB (`/api/deploy`) sampai 961 KB
+  (halaman depan). Total seluruh bundel yang dibangun 32 MB, itu pun banyak
+  berkas runtime Next yang terduplikasi di tiap function. Angka besar di
+  **ringkasan deployment** Vercel (~128 MB) adalah **lapisan runtime Node.js**
+  yang ikut dihitung Vercel di dalam ukuran function — dokumentasinya menyebut
+  batas 250 MB "including layers which are automatically used depending on
+  runtimes". Artinya itu lantai untuk semua function Node di Vercel, dan tak ada
+  gunanya dikejar. Bagian terbesar milik kita justru `next/og`: `resvg.wasm`
+  1,31 MB + `@vercel/og` 0,69 MB untuk `opengraph-image` dan `apple-icon` —
+  keduanya dirender saat build (`○`), jadi bukan function saat dilayani.
+  Region function sengaja tetap di `iad1` (Amerika) karena Neon di sana;
+  dipindah ke Singapura malah menambah satu kali perjalanan lintas samudra
+  untuk tiap kueri.
 - Respons `/api/deploy` berupa NDJSON stream: event `stage` per tahap
   (files → slot → create), lalu `done` atau `error` dengan kode 400/409/429/502.
 - ZIP diunggah browser langsung ke Vercel Blob (client upload) agar lolos
