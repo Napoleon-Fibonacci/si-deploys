@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
+import ActiveList from "@/components/ActiveList";
 import Background from "@/components/Background";
 import Capacity from "@/components/Capacity";
 import DeployForm from "@/components/DeployForm";
-import DeletedList from "@/components/DeletedList";
 import SideIcons from "@/components/SideIcons";
 import { IconRocket } from "@/components/icons";
 import { OPEN_GRAPH, SITE } from "@/lib/site";
@@ -69,7 +69,7 @@ export default function Home() {
               <p className="lead">Isi nama, pilih sumber, lalu deploy.</p>
             </header>
             <DeployForm />
-            <DeletedList />
+            <ActiveList />
           </div>
         </main>
       </div>

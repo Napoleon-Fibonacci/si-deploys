@@ -8,7 +8,7 @@ import {
   deleteOne,
   findLiveByName,
   listForAdmin,
-  recentDeleted,
+  recentActive,
   reserveSlot,
   sweepStale,
 } from "./deployments";
@@ -102,14 +102,15 @@ describe("findLiveByName", () => {
   });
 });
 
-describe("recentDeleted", () => {
-  it("membatasi limit minimal 1", async () => {
+describe("recentActive", () => {
+  it("hanya baris hidup dan membatasi limit minimal 1", async () => {
     const { adapter, queries } = fake(() => ({
-      rows: [{ name: "a", deleted_at: "2026-01-01" }],
+      rows: [{ id: "1", name: "a", created_at: "2026-01-01" }],
     }));
     useDatabase(adapter);
 
-    await expect(recentDeleted(0)).resolves.toHaveLength(1);
+    await expect(recentActive(0)).resolves.toHaveLength(1);
+    expect(queries[0].sql).toContain("status IN ('active','deleting')");
     expect(queries[0].sql).toContain("LIMIT 1");
   });
 });

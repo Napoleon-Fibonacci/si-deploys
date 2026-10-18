@@ -59,9 +59,10 @@ export interface Reservation {
   victim: ReservedVictim | null;
 }
 
-export interface DeletedRow {
+export interface ActiveRow {
+  id: string;
   name: string;
-  deleted_at: string | Date;
+  created_at: string | Date;
 }
 
 export interface AdminRow {
@@ -263,11 +264,19 @@ export async function findLiveByName(name: string): Promise<boolean> {
   return result.rows.length > 0;
 }
 
-export async function recentDeleted(limit = 20): Promise<DeletedRow[]> {
-  const result = await getDatabase().query<DeletedRow>(
-    `SELECT name, deleted_at FROM ${TABLE}
-     WHERE status = 'deleted'
-     ORDER BY deleted_at DESC
+/**
+ * Project yang sedang hidup (termasuk yang sedang dihapus: selama barisnya
+ * belum 'deleted', situsnya masih dilayani), terbaru lebih dulu. Dipakai
+ * daftar publik di halaman depan.
+ *
+ * `name` ikut dibaca justru supaya bisa disamarkan di server lewat
+ * `maskName`; nama aslinya tidak pernah sampai ke browser.
+ */
+export async function recentActive(limit = 20): Promise<ActiveRow[]> {
+  const result = await getDatabase().query<ActiveRow>(
+    `SELECT id, name, created_at FROM ${TABLE}
+     WHERE status IN ('active','deleting')
+     ORDER BY created_at DESC
      LIMIT ${Math.max(1, Math.floor(limit))}`
   );
   return result.rows;

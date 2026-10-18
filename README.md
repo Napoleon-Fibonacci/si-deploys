@@ -11,7 +11,7 @@ Acuan: `PRD-vercel-deployer.md`. Dokumen desain UI tidak disertakan di repo ini.
 
 ```
 app/
-  page.tsx                  Halaman depan (form deploy + ledger terhapus)
+  page.tsx                  Halaman depan (form deploy + daftar project hidup)
   layout.tsx                Font, metadata SEO, template judul
   globals.css               Palet gelap, token, keyframes, reduced motion
   icon.svg                  Favicon + ikon PWA (vektor)
@@ -33,7 +33,7 @@ app/
 components/
   DeployForm.tsx            Form deploy + dropzone + status bar bawah (client);
                             hanya render + langganan handler, tanpa urutan deploy
-  DeletedList.tsx           Ledger project terhapus (server)
+  ActiveList.tsx            Ledger project hidup; nama jadi inisial, tanpa URL (server)
   DeleteRow.tsx             Tombol hapus dua langkah di baris tabel (client)
   Capacity.tsx              Penanda slot terpakai di bar atas (server)
   Background.tsx            Latar kisi titik statis
@@ -51,6 +51,7 @@ lib/
   deploy-client.ts          sisi klien alur deploy: batas, zip, unggah Blob,
                             panggilan /api/deploy, baca NDJSON (tanpa React)
   validate.ts               nama, path, ukuran, anti zip bomb + batas bersama
+  mask.ts                   penyamaran nama project untuk daftar publik
   deployments.ts            pemilik tabel deployments: kosakata status,
                             transaksi slot, transisi, bacaan, sapuan
   ratelimit.ts              kuota jendela tetap ber-scope (deploy, upload, adminLogin)
@@ -96,6 +97,12 @@ Halaman depan sengaja terbuka untuk mesin pencari (`index, follow`); `/api`
 dan `/admin` ditutup lewat `robots.txt`. `sitemap.xml`, `robots.txt`, dan
 `manifest.webmanifest` semuanya mengambil judul dan deskripsi dari
 `lib/site.ts`, jadi kalimatnya tak bisa berbeda antar tempat.
+
+Karena halaman depan publik, daftar project di bawah form hanya menampilkan
+**inisial** tiap bagian nama (`lib/mask.ts`) dan tanpa tautan: nama asli
+project orang lain — dan berarti alamat URL-nya — tak pernah ikut ke browser.
+Penyamaran terjadi di server, dan kunci baris memakai `id` karena kunci React
+ikut terkirim di payload RSC.
 
 Kartu preview WhatsApp/Twitter dibangun oleh `app/opengraph-image.tsx`
 (1200x630, PNG, sekitar 42 KB) dan dirender saat build — tak ada berkas
