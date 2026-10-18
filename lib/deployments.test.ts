@@ -1,9 +1,11 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { useDatabase, type QueryResult, type Queryable } from "./db";
+import { AppError } from "./errors";
 import {
   NameTakenError,
   adminFilter,
   countLive,
+  deleteOne,
   findLiveByName,
   listForAdmin,
   recentDeleted,
@@ -33,6 +35,8 @@ function fake(handler: Handler) {
 
 afterEach(() => {
   useDatabase(null);
+  vi.unstubAllEnvs();
+  vi.unstubAllGlobals();
 });
 
 describe("adminFilter", () => {
@@ -239,5 +243,74 @@ describe("sweepStale", () => {
     await expect(sweepStale()).resolves.toEqual({ failed: 0, deleted: 0, remaining: 1 });
     expect(queries.some((entry) => entry.sql.includes("SET status = 'deleted'"))).toBe(false);
     vi.unstubAllEnvs();
+  });
+});
+
+describe("deleteOne", () => {
+  /** Baris seperti yang dibaca deleteOne, lengkap dengan project Vercel-nya. */
+  const row = (vercelProjectId: string | null, status = "active") => (sql: string) => {
+    if (sql.startsWith("SELECT name, status")) {
+      return { rows: [{ name: "blog", status, vercel_project_id: vercelProjectId }] };
+    }
+    return { rows: [] };
+  };
+
+  it("menandai deleting, menghapus di Vercel, lalu menandai deleted", async () => {
+    vi.stubEnv("VERCEL_TOKEN", "tok");
+    const fetchMock = vi.fn(
+      async (_input: RequestInfo | URL, _init?: RequestInit) =>
+        new Response(null, { status: 200 })
+    );
+    vi.stubGlobal("fetch", fetchMock);
+    const { adapter, queries } = fake(row("prj_1"));
+    useDatabase(adapter);
+
+    await expect(deleteOne("row-1")).resolves.toEqual({ name: "blog", outcome: "done" });
+
+    expect(String(fetchMock.mock.calls[0][0])).toContain("/v9/projects/prj_1");
+    expect(fetchMock.mock.calls[0][1]?.method).toBe("DELETE");
+    expect(queries.map((entry) => entry.sql)).toEqual([
+      expect.stringContaining("SELECT name, status"),
+      expect.stringContaining("SET status = 'deleting'"),
+      expect.stringContaining("SET status = 'deleted'"),
+    ]);
+  });
+
+  it("tidak menyentuh Vercel kalau baris belum punya project", async () => {
+    vi.stubEnv("VERCEL_TOKEN", "tok");
+    const fetchMock = vi.fn();
+    vi.stubGlobal("fetch", fetchMock);
+    const { adapter, queries } = fake(row(null));
+    useDatabase(adapter);
+
+    await expect(deleteOne("row-1")).resolves.toEqual({ name: "blog", outcome: "done" });
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(queries.some((entry) => entry.sql.includes("SET status = 'deleted'"))).toBe(true);
+  });
+
+  it("mengembalikan retry dan membiarkan baris 'deleting' saat Vercel gagal", async () => {
+    vi.stubEnv("VERCEL_TOKEN", "");
+    const { adapter, queries } = fake(row("prj_1"));
+    useDatabase(adapter);
+
+    await expect(deleteOne("row-1")).resolves.toEqual({ name: "blog", outcome: "retry" });
+    expect(queries.some((entry) => entry.sql.includes("SET status = 'deleted'"))).toBe(false);
+    expect(queries.some((entry) => entry.sql.includes("SET status = 'deleting'"))).toBe(true);
+  });
+
+  it("baris yang sudah terhapus tidak diubah lagi", async () => {
+    const { adapter, queries } = fake(row(null, "deleted"));
+    useDatabase(adapter);
+
+    await expect(deleteOne("row-1")).resolves.toEqual({ name: "blog", outcome: "done" });
+    expect(queries).toHaveLength(1);
+  });
+
+  it("melempar 404 kalau barisnya tidak ada", async () => {
+    const { adapter } = fake(() => ({ rows: [] }));
+    useDatabase(adapter);
+
+    await expect(deleteOne("row-1")).rejects.toBeInstanceOf(AppError);
+    await expect(deleteOne("row-1")).rejects.toMatchObject({ code: 404 });
   });
 });

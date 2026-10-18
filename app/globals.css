@@ -666,10 +666,41 @@ body {
   max-width: 960px;
 }
 
+/* Kartu masuk: terpusat oleh .app-main, jadi tanpa margin atas sendiri. */
 .admin-login {
   width: 100%;
-  max-width: 380px;
-  margin-top: 12vh;
+  max-width: 400px;
+  padding: 28px 24px 22px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.admin-login .field {
+  margin-top: 22px;
+}
+.login-mark {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  margin-bottom: 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface2);
+  color: var(--accent);
+}
+.login-submit {
+  width: 100%;
+}
+.login-foot {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--faint);
 }
 
 .admin-head {
@@ -693,38 +724,46 @@ body {
   color: var(--faint);
 }
 
-.filters {
+.stats {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 16px;
+  gap: 8px;
+  margin-bottom: 20px;
 }
-.filter {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: 5px 10px;
-  border: 1px solid transparent;
-  border-radius: 8px;
-  font-size: 12px;
-  color: var(--muted);
+.stat {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 84px;
+  padding: 9px 12px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 70%, transparent);
   transition:
-    color 160ms var(--ease-out),
-    background-color 160ms var(--ease-out);
+    border-color 160ms var(--ease-out),
+    background-color 160ms var(--ease-out),
+    transform 160ms var(--ease-out);
 }
-.filter:hover {
-  color: var(--ink);
-  background: var(--surface2);
-}
-.filter[aria-current="true"] {
-  color: var(--ink);
-  background: var(--surface3);
+.stat:hover {
   border-color: var(--line2);
+  background: var(--surface2);
+  transform: translateY(-1px);
 }
-.filter-count {
+.stat[aria-current="true"] {
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  background: color-mix(in srgb, var(--accent) 9%, var(--surface));
+}
+.stat-count {
   font-family: var(--font-mono);
+  font-size: 16px;
+  line-height: 1.2;
+}
+.stat-label {
   font-size: 11px;
   color: var(--faint);
+}
+.stat[aria-current="true"] .stat-label {
+  color: var(--muted);
 }
 
 .admin-search {
@@ -824,6 +863,65 @@ body {
   color: var(--faint);
 }
 
+/* ---------- Kabar sekali-tampil ---------- */
+
+.flash {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-left-width: 2px;
+  border-radius: 10px;
+  background: var(--surface);
+  font-size: 13px;
+  color: var(--muted);
+}
+.flash > svg {
+  flex-shrink: 0;
+}
+.flash[data-tone="ok"] {
+  border-left-color: var(--ok);
+}
+.flash[data-tone="ok"] > svg {
+  color: var(--ok);
+}
+.flash[data-tone="err"] {
+  border-left-color: var(--err);
+}
+.flash[data-tone="err"] > svg {
+  color: var(--err);
+}
+
+/* ---------- Tombol hapus di baris tabel ---------- */
+
+/* Lebarnya dipatok supaya kolom tak bergeser saat tombol bersiap menghapus. */
+.admin-cell-action {
+  width: 120px;
+  min-width: 120px;
+  text-align: right;
+}
+.del-confirm {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
+}
+.del-ask {
+  font-size: 12px;
+  color: var(--err);
+  white-space: nowrap;
+}
+.icon-btn.is-danger {
+  color: var(--err);
+}
+.icon-btn.is-danger:hover {
+  color: var(--err);
+  border-color: color-mix(in srgb, var(--err) 45%, var(--line));
+  background: color-mix(in srgb, var(--err) 14%, var(--surface3));
+}
+
 /* ---------- prefers-reduced-motion ---------- */
 
 @media (prefers-reduced-motion: reduce) {
@@ -842,9 +940,13 @@ body {
   .check-draw path,
   .btn-primary,
   .btn-ghost,
-  .input {
+  .input,
+  .stat {
     transition-duration: 1ms;
     animation-duration: 1ms;
+  }
+  .stat:hover {
+    transform: none;
   }
   .spinner {
     animation-duration: 1.4s;

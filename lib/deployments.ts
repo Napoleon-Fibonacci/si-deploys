@@ -199,6 +199,51 @@ export async function revertVictim(rowId: string): Promise<void> {
   await getDatabase().query(`UPDATE ${TABLE} SET status = 'active' WHERE id = $1`, [rowId]);
 }
 
+/* ---------- Penghapusan manual dari menu admin ---------- */
+
+/**
+ * "done" = baris kini berstatus 'deleted' (Vercel sudah bersih atau tak pernah
+ * punya project). "retry" = penghapusan di Vercel gagal, sapuan yang mengulang.
+ */
+export type DeleteOutcome = "done" | "retry";
+
+export interface DeleteOneResult {
+  name: string;
+  outcome: DeleteOutcome;
+}
+
+/**
+ * Hapus satu baris dari menu admin: tandai 'deleting', hapus project-nya di
+ * Vercel, lalu tandai 'deleted'.
+ *
+ * Sengaja tidak memakai `revertVictim` saat Vercel menolak. Baris 'deleting'
+ * masih memakai slot dan mengunci namanya (lihat LIVE_SQL), jadi niat hapus
+ * tidak hilang diam-diam dan sapuan berikutnya bisa mengulanginya. Yang
+ * membebaskan slot dan nama hanya status 'deleted'.
+ */
+export async function deleteOne(rowId: string): Promise<DeleteOneResult> {
+  const found = await getDatabase().query<{
+    name: string;
+    status: DeployStatus;
+    vercel_project_id: string | null;
+  }>(`SELECT name, status, vercel_project_id FROM ${TABLE} WHERE id = $1`, [rowId]);
+
+  const row = found.rows[0];
+  if (!row) throw new AppError(404, "Baris tidak ditemukan.");
+  if (row.status === "deleted") return { name: row.name, outcome: "done" };
+
+  await getDatabase().query(`UPDATE ${TABLE} SET status = 'deleting' WHERE id = $1`, [rowId]);
+
+  try {
+    if (row.vercel_project_id) await deleteProject(row.vercel_project_id);
+  } catch {
+    return { name: row.name, outcome: "retry" };
+  }
+
+  await markDeleted(rowId);
+  return { name: row.name, outcome: "done" };
+}
+
 /* ---------- Bacaan ---------- */
 
 /** Jumlah slot terpakai. Pending basi tidak dihitung. */

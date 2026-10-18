@@ -20,7 +20,7 @@ app/
   manifest.ts               Web app manifest
   robots.ts                 robots.txt: izinkan publik, tutup /api dan /admin
   sitemap.ts                sitemap.xml (situs satu halaman)
-  admin/page.tsx            Daftar semua deploy + filter status + cari (server)
+  admin/page.tsx            Daftar semua deploy + kartu status + cari + hapus (server)
   admin/login/page.tsx      Form masuk admin (tanpa JS)
   api/deploy/route.ts       POST: alur deploy utama (NDJSON stream)
   api/upload/route.ts       POST: token client upload Vercel Blob
@@ -29,10 +29,12 @@ app/
   api/admin/login/route.ts  POST: set cookie sesi admin
   api/admin/logout/route.ts POST: hapus cookie sesi admin
   api/admin/sweep/route.ts  POST: tombol "Bersihkan" di menu admin
+  api/admin/delete/route.ts POST: tombol hapus di satu baris daftar admin
 components/
   DeployForm.tsx            Form deploy + dropzone + status bar bawah (client);
                             hanya render + langganan handler, tanpa urutan deploy
   DeletedList.tsx           Ledger project terhapus (server)
+  DeleteRow.tsx             Tombol hapus dua langkah di baris tabel (client)
   Capacity.tsx              Penanda slot terpakai di bar atas (server)
   Background.tsx            Latar kisi titik statis
   SideIcons.tsx             Ikon hiasan bergerak di tepi layar
@@ -117,9 +119,19 @@ Buka `/admin`. Dilindungi password tunggal dari env `ADMIN_PASSWORD`.
 Kosong = menu admin nonaktif (halaman menampilkan pesan). Setelah masuk,
 cookie sesi httpOnly bertanda tangan HMAC berlaku 12 jam; tombol Keluar
 menghapusnya. Isinya: daftar semua baris `deployments` (100 terbaru),
-filter per status, dan pencarian nama. Tombol **Bersihkan** menjalankan
-sapuan yang sama dengan cron: pending basi ditandai gagal, deleting
-menggantung diulang penghapusannya di Vercel.
+kartu jumlah per status (sekaligus filter), pencarian nama, dan satu tombol
+hapus di tiap baris. Tombol **Bersihkan** menjalankan sapuan yang sama dengan
+cron: pending basi ditandai gagal, deleting menggantung diulang
+penghapusannya di Vercel.
+
+**Hapus satu project** memakai jalur `deleteOne` di `lib/deployments.ts`:
+baris ditandai `deleting`, project-nya dihapus di Vercel, lalu ditandai
+`deleted`. Jadi URL-nya berhenti hidup dan slotnya bebas lagi. Kalau Vercel
+menolak, baris **dibiarkan** `deleting` — bukan dikembalikan ke `active` —
+supaya niat hapusnya tidak hilang dan sapuan berikutnya mengulanginya.
+Permintaannya POST (tak bisa terpicu prefetch atau tautan), dan tombolnya
+butuh dua klik: klik pertama hanya mempersenjatai, klik kedua mengirim form.
+Tanpa JavaScript tombolnya diam, jadi tak ada yang terhapus tanpa konfirmasi.
 
 Tebakan password dibatasi **10 percobaan per 15 menit per IP**
 (`RATE_LIMITS.adminLogin`). Penghitungan terjadi sebelum password diperiksa,
@@ -199,8 +211,11 @@ admin memang butuh database. Pesan yang muncul dibedakan: `?error=limit`,
 - Auto-hapus: transaksi + `pg_advisory_xact_lock`, hapus hanya via
   `vercel_project_id` dari tabel `deployments`, di luar lock.
 - Animasi murni CSS (satu reveal saat muat, rail tahap deploy mengikuti
-  stream NDJSON, tab geser, reduced motion dihormati). Latar kisi titik
+  stream NDJSON, tab geser, kartu status dan baris tabel admin masuk
+  berjenjang, reduced motion dihormati). Latar kisi titik
   statis; tanpa glow, tanpa cursor light, library Motion tidak dipakai.
+  Halaman admin dan halaman masuk memakai `Background` + `SideIcons` yang
+  sama dengan halaman depan supaya tidak terasa pindah aplikasi.
 - Metadata disusun supaya tak saling menimpa: `openGraph` yang disetel di
   halaman **mengganti** milik layout, bukan menyatu. Karena itu dasarnya
   (`OPEN_GRAPH`, `TWITTER`) tinggal di `lib/site.ts` dan halaman depan
