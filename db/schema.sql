@@ -21,13 +21,11 @@ CREATE UNIQUE INDEX deployments_name_live
 CREATE INDEX deployments_oldest
   ON deployments (created_at) WHERE status = 'active';
 
--- Daftar terhapus di halaman depan.
-CREATE INDEX deployments_deleted_recent
-  ON deployments (deleted_at DESC) WHERE status = 'deleted';
-
 -- Rate limit jendela tetap per (scope, IP). Satu tabel untuk semua kebijakan;
 -- scope memisahkan kuota deploy dari kuota percobaan masuk admin.
 -- Lihat RATE_LIMITS di lib/ratelimit.ts.
+-- Jendela yang sudah kedaluwarsa dibuang oleh sapuan harian
+-- (PRUNE_RATE_LIMITS_SQL di lib/deployments.ts).
 CREATE TABLE rate_limits (
   scope          text NOT NULL,
   ip             text NOT NULL,

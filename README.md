@@ -25,7 +25,7 @@ app/
   api/deploy/route.ts       POST: alur deploy utama (NDJSON stream)
   api/upload/route.ts       POST: token client upload Vercel Blob
   api/check-name/route.ts   GET: cek ketersediaan nama (DB + DNS)
-  api/cron/cleanup/route.ts GET/POST: sapuan nyangkut (cron harian Hobby)
+  api/cron/cleanup/route.ts GET/POST: sapuan nyangkut (cron harian Hobby); butuh sesi admin atau CRON_SECRET
   api/admin/login/route.ts  POST: set cookie sesi admin
   api/admin/logout/route.ts POST: hapus cookie sesi admin
   api/admin/sweep/route.ts  POST: tombol "Bersihkan" di menu admin
@@ -61,6 +61,7 @@ lib/
 db/schema.sql               Skema Neon (deployments, rate_limits)
 db/migrations/              Migrasi untuk database yang sudah terlanjur dibuat
   001-rate-limit-scope.sql    tambah kolom scope + kunci utama baru
+  002-remove-deleted-list-index.sql  buang indeks daftar "Baru dihapus"
 vercel.json                 Cron sapuan harian (batas Hobby)
 vitest.config.mts           Konfigurasi tes (alias @, hanya lib/**)
 ```
@@ -159,7 +160,9 @@ admin memang butuh database. Pesan yang muncul dibedakan: `?error=limit`,
    dari versi sebelumnya, jalankan berkas di `db/migrations/` sesuai urutan).
 5. Cron sapuan otomatis dari `vercel.json` (`/api/cron/cleanup`, harian).
    Vercel Hobby hanya mengizinkan cron sekali sehari; ekspresi per jam
-   membuat deploy ditolak.
+   membuat deploy ditolak. Isi env `CRON_SECRET` dengan string acak: Vercel
+   menyertakan header `Authorization: Bearer <CRON_SECRET>` saat memanggil
+   cron, dan tanpa env itu endpoint-nya menolak semua kecuali sesi admin.
 
 ## Keputusan implementasi
 
@@ -212,7 +215,15 @@ admin memang butuh database. Pesan yang muncul dibedakan: `?error=limit`,
   lebih tua dari `PENDING_TTL_MS` (10 menit) tidak memakai slot dan tidak
   mengunci nama. Jadi kebenaran tidak bergantung pada frekuensi cron —
   penting karena Vercel Hobby hanya mengizinkan cron sekali sehari. Cron dan
-  tombol admin hanya jaring pengaman.
+  tombol admin hanya jaring pengaman. Sapuan yang sama juga membuang jendela
+  `rate_limits` yang sudah kedaluwarsa, supaya tabel penghitungnya tidak
+  menumpuk selamanya.
+- `/api/cron/cleanup` gagal-tertutup: yang lolos hanya sesi admin atau header
+  `Authorization: Bearer CRON_SECRET`. Vercel **tidak** membuat `CRON_SECRET`
+  sendiri — yang terjadi sebaliknya, env itu diisi manusia lalu Vercel
+  menyertakan headernya saat memanggil cron. Sebelumnya, tanpa env itu,
+  endpoint-nya terbuka: siapa pun bisa memicu sapuan berulang kali, dan tiap
+  sapuan menembak API Vercel serta menyentuh database.
 - Respons `/api/deploy` berupa NDJSON stream: event `stage` per tahap
   (files → slot → create), lalu `done` atau `error` dengan kode 400/409/429/502.
 - ZIP diunggah browser langsung ke Vercel Blob (client upload) agar lolos

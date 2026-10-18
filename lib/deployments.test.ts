@@ -227,6 +227,15 @@ describe("sweepStale", () => {
     expect(queries.some((entry) => entry.sql.includes("SET status = 'deleted'"))).toBe(true);
   });
 
+  it("membuang jendela rate limit yang sudah kedaluwarsa", async () => {
+    const { adapter, queries } = fake(() => ({ rows: [] }));
+    useDatabase(adapter);
+
+    await sweepStale();
+    const prune = queries.find((entry) => entry.sql.includes("DELETE FROM rate_limits"));
+    expect(prune?.sql).toContain("interval '1 day'");
+  });
+
   it("tetap lanjut walau penghapusan di Vercel gagal", async () => {
     vi.stubEnv("VERCEL_TOKEN", "");
     const { adapter, queries } = fake((sql) => {

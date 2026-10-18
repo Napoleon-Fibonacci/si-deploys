@@ -37,6 +37,15 @@ const LIVE_SQL = `(status IN ('active','deleting') OR (status = 'pending' AND cr
 const FAIL_STALE_SQL = `UPDATE ${TABLE} SET status = 'failed'
   WHERE status = 'pending' AND created_at <= now() - ${STALE_SQL}`;
 
+/**
+ * Buang jendela rate limit yang sudah lewat. Jendelanya tetap, jadi baris
+ * lama tak akan pernah disentuh lagi dan hanya menumpuk di Neon; sapuan
+ * harian yang merapikannya. Satu hari jauh lebih tua dari jendela terpanjang
+ * (satu jam untuk deploy), jadi tak ada kuota berjalan yang ikut terhapus.
+ */
+const PRUNE_RATE_LIMITS_SQL = `DELETE FROM rate_limits
+  WHERE window_start < now() - interval '1 day'`;
+
 /* ---------- Kesalahan domain ---------- */
 
 export class NameTakenError extends AppError {
@@ -345,10 +354,13 @@ export async function listForAdmin(
 
 /**
  * Sapuan manual (dipakai cron harian dan tombol admin):
- * pending basi ditandai failed, lalu deleting yang menggantung diulang
- * penghapusannya di Vercel.
+ * pending basi ditandai failed, deleting yang menggantung diulang
+ * penghapusannya di Vercel, dan jendela rate limit yang sudah kedaluwarsa
+ * dibuang supaya tabelnya tidak menumpuk.
  */
 export async function sweepStale(limit = 10): Promise<SweepResult> {
+  await getDatabase().query(PRUNE_RATE_LIMITS_SQL);
+
   const failedResult = await getDatabase().query(FAIL_STALE_SQL);
 
   const pendingDeletions = await getDatabase().query<{ id: string; vercel_project_id: string | null }>(

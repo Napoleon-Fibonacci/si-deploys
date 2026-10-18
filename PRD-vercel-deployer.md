@@ -57,8 +57,8 @@ Aturan inti:
 - Penghapusan dan pencatatan jumlah dilakukan dalam satu transaksi dengan lock, agar dua deploy bersamaan tidak melewati batas.
 - Jika penghapusan di Vercel gagal, deploy baru dibatalkan dan pengguna melihat pesan error.
 
-### 5.4 Daftar project terhapus
-Halaman depan menampilkan daftar project yang baru dihapus (nama dan tanggal hapus, 20 terbaru), supaya teman bisa mengecek sendiri kalau webnya hilang. Tidak ada masa perlindungan umur project.
+### 5.4 Daftar project di halaman depan
+Halaman depan menampilkan daftar project yang **sedang hidup** (20 terbaru) supaya terlihat ada aktivitas. Semula daftarnya berisi project yang baru dihapus lengkap dengan namanya, tapi halaman depan itu publik — nama project menunjuk langsung ke URL-nya — jadi diganti: yang tampil hanya dua huruf pertama nama, sisanya bintang, ditutup `.vercel.app`, tanpa tautan. Tidak ada masa perlindungan umur project.
 
 ## 6. Alur Deploy
 
