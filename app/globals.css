@@ -634,6 +634,48 @@ body {
   to { transform: rotate(360deg); }
 }
 
+/* ---------- Pratinjau situs hasil deploy ---------- */
+
+.preview {
+  position: relative;
+  display: block;
+  margin-top: 22px;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface2);
+  transition: border-color 160ms var(--ease-out);
+}
+.preview:hover {
+  border-color: var(--line2);
+}
+.preview-img {
+  /* Absolut supaya menumpuk di atas catatan "Menyiapkan pratinjau…". */
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  /* Bagian atas halaman yang paling mewakili; sisanya terpotong. */
+  object-position: top center;
+  opacity: 0;
+  transition: opacity 260ms var(--ease-out);
+}
+.preview-img.is-loaded {
+  opacity: 1;
+}
+.preview-note {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 20px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--faint);
+}
+
 /* ---------- Ledger (pane samping) ---------- */
 
 .ledger-row {
@@ -941,7 +983,9 @@ body {
   .btn-primary,
   .btn-ghost,
   .input,
-  .stat {
+  .stat,
+  .preview,
+  .preview-img {
     transition-duration: 1ms;
     animation-duration: 1ms;
   }

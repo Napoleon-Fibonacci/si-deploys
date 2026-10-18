@@ -230,6 +230,12 @@ admin memang butuh database. Pesan yang muncul dibedakan: `?error=limit`,
   batas body 4,5 MB (PRD 9.1). Folder dikemas jadi ZIP di browser (fflate).
 - Auto-hapus: transaksi + `pg_advisory_xact_lock`, hapus hanya via
   `vercel_project_id` dari tabel `deployments`, di luar lock.
+- Pratinjau situs (`components/SitePreview.tsx`) hanya muncul di kartu hasil
+  deploy, bukan di daftar. Gambarnya diambil layanan screenshot pihak ketiga —
+  Vercel Functions tidak bisa menjalankan browser — dengan microlink lebih dulu
+  (retina) dan thum.io sebagai cadangan; `onError` menukar sumbernya, dan kalau
+  dua-duanya gagal kartunya berhenti jadi tautan biasa. URL sumbernya disusun di
+  `lib/preview.ts` supaya bisa dites tanpa React.
 - Animasi murni CSS (satu reveal saat muat, rail tahap deploy mengikuti
   stream NDJSON, tab geser, kartu status dan baris tabel admin masuk
   berjenjang, reduced motion dihormati). Latar kisi titik

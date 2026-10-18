@@ -38,6 +38,7 @@ import {
   isValidName,
 } from "@/lib/validate";
 import { NAME_TAKEN_MESSAGE, type ErrorField } from "@/lib/errors";
+import { SitePreview } from "@/components/SitePreview";
 
 type Tab = SourceType | "paste";
 type CheckState = "idle" | "checking" | "ok" | "taken";
@@ -587,6 +588,8 @@ export default function DeployForm() {
             </div>
           </div>
         </form>
+
+        {state === "success" && result && <SitePreview url={result.url} />}
       </section>
 
       {/* Status bar bawah */}
