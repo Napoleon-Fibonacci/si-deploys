@@ -6,10 +6,11 @@ import { IconGlobe } from "@/components/icons";
  * Ledger project yang sedang hidup, dirender di server.
  *
  * Halaman ini publik, dan yang dipajang adalah project milik orang lain, jadi
- * nama dan URL-nya disamarkan: yang tampil hanya inisial tiap bagian nama
- * (`maskName`). Penyamaran terjadi di server — nama aslinya tak pernah ikut
- * ke browser. Kunci baris memakai `id`, bukan nama, karena kunci React ikut
- * terkirim di payload RSC.
+ * nama dan URL-nya disamarkan: yang tampil hanya dua huruf pertama dari nama,
+ * lalu bintang sepanjang sisanya, ditutup akhiran `.vercel.app` supaya tetap
+ * terbaca sebagai alamat. Penyamaran terjadi di server — nama aslinya tak
+ * pernah ikut ke browser. Kunci baris memakai `id`, bukan nama, karena kunci
+ * React ikut terkirim di payload RSC.
  */
 export default async function ActiveList() {
   const rows = await recentActive(20).catch(() => []);
@@ -34,8 +35,9 @@ export default async function ActiveList() {
               className="ledger-row row-in"
               style={{ ["--d" as string]: `${Math.min(index * 30, 300)}ms` }}
             >
-              <span className="font-mono text-[13px] tracking-[0.18em] text-muted">
+              <span className="truncate font-mono text-[13px]">
                 {maskName(row.name)}
+                <span className="text-faint">.vercel.app</span>
               </span>
               <time className="shrink-0 font-mono text-[11px] text-faint">
                 {formatDate(row.created_at)}
@@ -46,7 +48,7 @@ export default async function ActiveList() {
       )}
 
       <p className="mt-auto border-t border-line pt-3.5 text-[12px] leading-relaxed text-faint">
-        Nama dan URL disamarkan — hanya inisial — karena halaman ini publik. Saat
+        Nama disamarkan — dua huruf pertama saja — karena halaman ini publik. Saat
         kapasitas penuh, project tertua dihapus otomatis sebelum deploy baru.
       </p>
     </aside>

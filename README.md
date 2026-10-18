@@ -33,7 +33,7 @@ app/
 components/
   DeployForm.tsx            Form deploy + dropzone + status bar bawah (client);
                             hanya render + langganan handler, tanpa urutan deploy
-  ActiveList.tsx            Ledger project hidup; nama jadi inisial, tanpa URL (server)
+  ActiveList.tsx            Ledger project hidup; nama jadi pola te********.vercel.app (server)
   DeleteRow.tsx             Tombol hapus dua langkah di baris tabel (client)
   Capacity.tsx              Penanda slot terpakai di bar atas (server)
   Background.tsx            Latar kisi titik statis
@@ -99,10 +99,12 @@ dan `/admin` ditutup lewat `robots.txt`. `sitemap.xml`, `robots.txt`, dan
 `lib/site.ts`, jadi kalimatnya tak bisa berbeda antar tempat.
 
 Karena halaman depan publik, daftar project di bawah form hanya menampilkan
-**inisial** tiap bagian nama (`lib/mask.ts`) dan tanpa tautan: nama asli
-project orang lain — dan berarti alamat URL-nya — tak pernah ikut ke browser.
-Penyamaran terjadi di server, dan kunci baris memakai `id` karena kunci React
-ikut terkirim di payload RSC.
+**dua huruf pertama** nama, sisanya bintang sepanjang sisanya, ditutup akhiran
+`.vercel.app` (`lib/mask.ts`) — tanpa tautan, jadi tak ada URL yang bisa
+diklik. Nama panjangnya masih terbaca, jadi dua project berbeda tetap terlihat
+berbeda, tapi nama aslinya tak pernah ikut ke browser: penyamaran terjadi di
+server, dan kunci baris memakai `id` karena kunci React ikut terkirim di
+payload RSC.
 
 Kartu preview WhatsApp/Twitter dibangun oleh `app/opengraph-image.tsx`
 (1200x630, PNG, sekitar 42 KB) dan dirender saat build — tak ada berkas
